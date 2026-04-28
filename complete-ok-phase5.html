@@ -568,18 +568,47 @@
       }, [pushFeed, incCurrentHourThroughput, recordLiveTick]);
 
       // Main tick loop: schedules itself with natural jitter as long as any worker is running.
+      // Uses a Web Worker (when available) to drive timing so background-tab throttling does not slow the demo.
       useEffect(() => {
         if (!anyRunning) return;
         let cancelled = false;
-        let timeoutId = null;
-        const loop = () => {
+        let mainThreadTimer = null;
+        let worker = null;
+
+        const fire = () => {
           if (cancelled) return;
           tickOnce();
-          const next = randInt(800, 2000);
-          timeoutId = setTimeout(loop, next);
         };
-        timeoutId = setTimeout(loop, 600);
-        return () => { cancelled = true; if (timeoutId) clearTimeout(timeoutId); };
+
+        // Try to use a dedicated Web Worker for timer pacing (immune to background-tab throttling).
+        try {
+          const workerSrc = `let id=null;onmessage=function(e){if(e.data&&e.data.type==='start'){const tick=()=>{postMessage('tick');id=setTimeout(tick,300+Math.random()*600)};id=setTimeout(tick,250)}else if(e.data&&e.data.type==='stop'){if(id)clearTimeout(id);id=null}};`;
+          const blob = new Blob([workerSrc], { type: 'application/javascript' });
+          const url = URL.createObjectURL(blob);
+          worker = new Worker(url);
+          worker.onmessage = fire;
+          worker.postMessage({ type: 'start' });
+        } catch (err) {
+          worker = null;
+        }
+
+        // Fallback: main-thread setTimeout loop (subject to throttling but works without Web Workers).
+        if (!worker) {
+          const loop = () => {
+            if (cancelled) return;
+            tickOnce();
+            mainThreadTimer = setTimeout(loop, randInt(300, 900));
+          };
+          mainThreadTimer = setTimeout(loop, 250);
+        }
+
+        return () => {
+          cancelled = true;
+          if (mainThreadTimer) clearTimeout(mainThreadTimer);
+          if (worker) {
+            try { worker.postMessage({ type: 'stop' }); worker.terminate(); } catch (e) {}
+          }
+        };
       }, [anyRunning, tickOnce]);
 
       // Update "live last minute" stat once a second.
