@@ -1,0 +1,2462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Complete OK Operations Intelligence Platform</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      font-family: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+    }
+    html, body, #root { height: 100%; margin: 0; padding: 0; background: #FAFAFA; color: #1F2937; }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 6px; }
+    ::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
+
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(0.85); }
+    }
+    @keyframes pulseRing {
+      0% { transform: scale(0.9); opacity: 0.55; }
+      100% { transform: scale(2.3); opacity: 0; }
+    }
+    @keyframes fadeInRow {
+      from { opacity: 0; transform: translateY(-2px); background-color: rgba(15, 76, 129, 0.10); }
+      to { opacity: 1; transform: translateY(0); background-color: transparent; }
+    }
+    @keyframes flashRow {
+      0% { background-color: rgba(15, 76, 129, 0.12); }
+      100% { background-color: transparent; }
+    }
+    @keyframes flagPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.45); }
+      50% { box-shadow: 0 0 0 6px rgba(217, 119, 6, 0); }
+    }
+    .pulse-dot { animation: pulseDot 1.6s ease-in-out infinite; }
+    .pulse-ring { animation: pulseRing 1.8s ease-out infinite; }
+    .fade-in-row { animation: fadeInRow 0.5s ease-out; }
+    .flash-row { animation: flashRow 1.4s ease-out; }
+    .flag-pulse { animation: flagPulse 1.6s ease-out 1; }
+
+    .card { background: #FFFFFF; border: 1px solid #EAEAEC; border-radius: 6px; }
+    .card-elev { box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04); }
+
+    .brand-navy { color: #0F4C81; }
+    .bg-brand-navy { background: #0F4C81; }
+    .bg-brand-navy-50 { background: #F0F5FB; }
+    .bg-brand-navy-100 { background: #DCE7F3; }
+    .border-brand-navy { border-color: #0F4C81; }
+    .hover-brand-navy:hover { background: #0D3F6B; }
+
+    .nav-item { transition: background 0.12s ease, color 0.12s ease; }
+    .nav-item:hover { background: #F3F4F6; }
+    .nav-item.active { background: #F0F5FB; color: #0F4C81; }
+    .nav-item.active .nav-bar { background: #0F4C81; }
+
+    button { cursor: pointer; }
+    button:disabled { cursor: not-allowed; opacity: 0.55; }
+
+    .recharts-cartesian-axis-tick-value { font-size: 11px; fill: #6B7280; }
+    .recharts-cartesian-grid line { stroke: #EFF1F4; }
+    .recharts-tooltip-wrapper { outline: none; }
+
+    .focus-ring:focus { outline: 2px solid #0F4C81; outline-offset: 2px; }
+
+    .live-tape {
+      background: linear-gradient(90deg, transparent, rgba(22,163,74,0.08) 30%, rgba(22,163,74,0.08) 70%, transparent);
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" data-presets="env,react">
+    const { useState, useEffect, useRef, useMemo, useCallback } = React;
+    const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area, BarChart, Bar } = Recharts;
+
+    /* =====================================================
+     *  ICON SET (inline SVG, Lucide-style)
+     * ===================================================== */
+    const Icon = ({ name, size = 16, strokeWidth = 1.75, className = '' }) => {
+      const p = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth, strokeLinecap: 'round', strokeLinejoin: 'round', className };
+      switch (name) {
+        case 'dashboard': return (<svg {...p}><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>);
+        case 'users': return (<svg {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>);
+        case 'clipboard': return (<svg {...p}><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h4"/></svg>);
+        case 'chart': return (<svg {...p}><line x1="3" y1="3" x2="3" y2="21"/><line x1="3" y1="21" x2="21" y2="21"/><rect x="7" y="13" width="3" height="6"/><rect x="12" y="9" width="3" height="10"/><rect x="17" y="5" width="3" height="14"/></svg>);
+        case 'search': return (<svg {...p}><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>);
+        case 'bell': return (<svg {...p}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>);
+        case 'chevron-down': return (<svg {...p}><polyline points="6 9 12 15 18 9"/></svg>);
+        case 'chevron-left': return (<svg {...p}><polyline points="15 18 9 12 15 6"/></svg>);
+        case 'chevron-right': return (<svg {...p}><polyline points="9 18 15 12 9 6"/></svg>);
+        case 'play': return (<svg {...p}><polygon points="6 4 20 12 6 20 6 4"/></svg>);
+        case 'stop': return (<svg {...p}><rect x="5" y="5" width="14" height="14" rx="1.5"/></svg>);
+        case 'pause': return (<svg {...p}><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>);
+        case 'activity': return (<svg {...p}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>);
+        case 'alert': return (<svg {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>);
+        case 'check': return (<svg {...p}><polyline points="20 6 9 17 4 12"/></svg>);
+        case 'check-circle': return (<svg {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>);
+        case 'clock': return (<svg {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>);
+        case 'database': return (<svg {...p}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>);
+        case 'server': return (<svg {...p}><rect x="2" y="3" width="20" height="8" rx="2"/><rect x="2" y="13" width="20" height="8" rx="2"/><line x1="6" y1="7" x2="6.01" y2="7"/><line x1="6" y1="17" x2="6.01" y2="17"/></svg>);
+        case 'trending-up': return (<svg {...p}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>);
+        case 'trending-down': return (<svg {...p}><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>);
+        case 'user': return (<svg {...p}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>);
+        case 'menu': return (<svg {...p}><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>);
+        case 'settings': return (<svg {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>);
+        case 'help': return (<svg {...p}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>);
+        case 'circle-dot': return (<svg {...p}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>);
+        case 'arrow-right': return (<svg {...p}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>);
+        case 'shield': return (<svg {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>);
+        case 'plug': return (<svg {...p}><path d="M9 2v6"/><path d="M15 2v6"/><path d="M6 8h12v3a6 6 0 0 1-6 6 6 6 0 0 1-6-6V8z"/><path d="M12 17v5"/></svg>);
+        case 'file-text': return (<svg {...p}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>);
+        case 'eye': return (<svg {...p}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>);
+        case 'lock': return (<svg {...p}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>);
+        case 'zap': return (<svg {...p}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>);
+        default: return null;
+      }
+    };
+
+    /* =====================================================
+     *  HELPERS
+     * ===================================================== */
+    const pad2 = n => String(n).padStart(2, '0');
+    const nowHMS = () => { const d = new Date(); return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`; };
+    const nowHM = () => { const d = new Date(); return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
+    const rand = (min, max) => min + Math.random() * (max - min);
+    const randInt = (min, max) => Math.floor(rand(min, max + 1));
+    const pickWeighted = (arr) => {
+      const total = arr.reduce((s, x) => s + (x.weight || 1), 0);
+      let r = Math.random() * total;
+      for (const x of arr) { r -= (x.weight || 1); if (r <= 0) return x; }
+      return arr[arr.length - 1];
+    };
+    const fmtInt = v => Math.round(v).toLocaleString();
+    const fmt1 = v => (Math.round(v * 10) / 10).toFixed(1);
+
+    /* =====================================================
+     *  STATIC DATA / SEEDS
+     * ===================================================== */
+    const INITIAL_WORKERS = [
+      { id: 'w-elig', name: 'Patient Eligibility Verification', role: 'Verifies Medicare status and coverage details for all home health patients.', status: 'idle', tasksToday: 312, tasksWeek: 1847, tasksMonth: 1847, avgDurationSec: 1.4, successRate: 99.4, currentTask: 'Idle. Awaiting workforce start.', connections: ['CMS HETS', 'Clearinghouse', 'EMR'], currentStep: null, exceptionsFlagged: 7 },
+      { id: 'w-change', name: 'Insurance Change Detection', role: 'Identifies primary and secondary payer shifts, plan terminations, and MA plan switches.', status: 'idle', tasksToday: 312, tasksWeek: 1847, tasksMonth: 1847, avgDurationSec: 0.9, successRate: 99.6, currentTask: 'Idle. Awaiting workforce start.', connections: ['EMR', 'Clearinghouse'], currentStep: null, exceptionsFlagged: 7 },
+      { id: 'w-triage', name: 'Exception Triage', role: 'Routes flagged cases to billing team with context and recommended action.', status: 'idle', tasksToday: 14, tasksWeek: 78, tasksMonth: 78, avgDurationSec: 2.1, successRate: 98.8, currentTask: 'Idle. Awaiting workforce start.', connections: ['EMR', 'Billing System'], currentStep: null, exceptionsFlagged: 0 },
+    ];
+
+    const WORKFLOWS = {
+      'w-elig': [
+        { name: 'Pull Patient List', desc: 'Fetch the next batch of patients from the EMR.' },
+        { name: 'Query Eligibility Sources', desc: 'Check Medicare Part A and B via CMS HETS.' },
+        { name: 'Verify Coverage', desc: 'Confirm payer, effective dates, and benefit details.' },
+        { name: 'Update Patient Record', desc: 'Write verification result back to the EMR.' },
+        { name: 'Log Completion', desc: 'Record audit trail and metrics.' },
+      ],
+      'w-change': [
+        { name: 'Read Current Record', desc: 'Pull the current insurance state from the EMR.' },
+        { name: 'Cross-reference Payer Data', desc: 'Compare against clearinghouse and CMS responses.' },
+        { name: 'Detect Changes', desc: 'Identify plan terminations, MA shifts, and dual eligibility shifts.' },
+        { name: 'Flag Exceptions', desc: 'Route flagged cases into the triage queue.' },
+        { name: 'Log Completion', desc: 'Record audit trail and metrics.' },
+      ],
+      'w-triage': [
+        { name: 'Read Exception', desc: 'Pull the next flagged case from the triage queue.' },
+        { name: 'Gather Context', desc: 'Assemble patient history and prior verification actions.' },
+        { name: 'Determine Action', desc: 'Apply routing rules and attach recommended next step.' },
+        { name: 'Route to Reviewer', desc: 'Hand off to billing team with full context.' },
+        { name: 'Log Completion', desc: 'Record audit trail and metrics.' },
+      ],
+    };
+
+    const FUTURE_WORKERS = [
+      { name: 'Authorization & Recertification', summary: 'Tracks authorization windows and triggers timely recerts before they lapse.', icon: 'file-text' },
+      { name: 'Billing Operations', summary: 'Prepares clean claims and submits them to the clearinghouse on a daily cadence.', icon: 'server' },
+      { name: 'Denials & AR Follow-up', summary: 'Works denials by reason code and chases aged receivables to closure.', icon: 'trending-down' },
+    ];
+
+    const INITIAL_FEED = [
+      { ts: '09:42:18', worker: 'Eligibility Verification', patientId: 'PT-001847', action: 'Eligibility confirmed. Updated patient record.', result: 'verified', durationMs: 1240 },
+      { ts: '09:42:15', worker: 'Insurance Change Detection', patientId: 'PT-001846', action: 'Cross-referenced payer information. No changes detected.', result: 'no change', durationMs: 680 },
+      { ts: '09:42:12', worker: 'Eligibility Verification', patientId: 'PT-001846', action: 'Querying CMS HETS for Medicare Part A and Part B status.', result: 'verified', durationMs: 1480 },
+      { ts: '09:42:09', worker: 'Insurance Change Detection', patientId: 'PT-001845', action: 'Detected MA plan enrollment change. Flagging for review.', result: 'flagged', durationMs: 920 },
+      { ts: '09:42:06', worker: 'Eligibility Verification', patientId: 'PT-001845', action: 'Eligibility confirmed. Updated patient record.', result: 'verified', durationMs: 1100 },
+      { ts: '09:42:02', worker: 'Exception Triage', patientId: 'PT-001823', action: 'Routed to billing team. Recommended action attached.', result: 'routed', durationMs: 1840 },
+      { ts: '09:41:58', worker: 'Eligibility Verification', patientId: 'PT-001844', action: 'No changes detected. Marking patient verified.', result: 'verified', durationMs: 760 },
+      { ts: '09:41:54', worker: 'Eligibility Verification', patientId: 'PT-001843', action: 'Eligibility confirmed. Updated patient record.', result: 'verified', durationMs: 1340 },
+      { ts: '09:41:50', worker: 'Insurance Change Detection', patientId: 'PT-001842', action: 'Cross-referenced payer information.', result: 'no change', durationMs: 720 },
+      { ts: '09:41:46', worker: 'Eligibility Verification', patientId: 'PT-001841', action: 'Querying CMS HETS for Medicare Part A and Part B status.', result: 'verified', durationMs: 1560 },
+    ].map((e, i) => ({ ...e, _id: `seed-${i}` }));
+
+    const INITIAL_EXCEPTIONS = [
+      { id: 'ex-1', patientId: 'PT-001823', reason: 'MA plan enrollment change detected', urgency: 'high', flaggedAt: '09:38' },
+      { id: 'ex-2', patientId: 'PT-001789', reason: 'Coverage terminated by payer', urgency: 'high', flaggedAt: '09:21' },
+      { id: 'ex-3', patientId: 'PT-001767', reason: 'Dual eligibility shift', urgency: 'medium', flaggedAt: '08:54' },
+      { id: 'ex-4', patientId: 'PT-001745', reason: 'Address change affects service area', urgency: 'medium', flaggedAt: '08:32' },
+      { id: 'ex-5', patientId: 'PT-001712', reason: 'Plan termination pending', urgency: 'low', flaggedAt: '08:14' },
+    ];
+
+    const EXCEPTION_REASONS = [
+      { reason: 'MA plan enrollment change detected', shortAction: 'MA plan enrollment change', urgency: 'high', weight: 3 },
+      { reason: 'Coverage terminated by payer', shortAction: 'coverage termination', urgency: 'high', weight: 2 },
+      { reason: 'Dual eligibility shift', shortAction: 'dual eligibility shift', urgency: 'medium', weight: 3 },
+      { reason: 'Address change affects service area', shortAction: 'address change affecting service area', urgency: 'medium', weight: 2 },
+      { reason: 'Plan termination pending', shortAction: 'plan termination', urgency: 'low', weight: 2 },
+      { reason: 'Secondary payer change', shortAction: 'secondary payer change', urgency: 'medium', weight: 2 },
+    ];
+
+    const INITIAL_INTEGRATIONS = [
+      { name: 'EMR System', status: 'connected', lastSync: '2 min ago' },
+      { name: 'CMS HETS', status: 'connected', lastSync: '1 min ago' },
+      { name: 'Clearinghouse', status: 'connected', lastSync: '3 min ago' },
+      { name: 'Billing System', status: 'connected', lastSync: '5 min ago' },
+    ];
+
+    // 24-hour throughput. Pre-seed past hours; current and future hours start at 0 and accumulate live.
+    const buildSeedThroughput = () => {
+      const out = [];
+      const currentHour = new Date().getHours();
+      for (let h = 0; h < 24; h++) {
+        const label = `${pad2(h)}:00`;
+        const inAuto = h >= 6 && h <= 22;
+        const inManual = h >= 8 && h <= 17;
+        let auto = inAuto ? Math.max(0, Math.round(46 + 22 * Math.sin((h - 6) / 2.7) + (h === 9 ? 14 : 0))) : 0;
+        if (h >= currentHour) auto = 0; // current and future filled live
+        const manual = inManual ? Math.round(14 + 4 * Math.sin((h - 8) / 1.8)) : 0;
+        out.push({ hour: label, autonomous: auto, manual });
+      }
+      return out;
+    };
+
+    /* =====================================================
+     *  PATIENT DATA
+     * ===================================================== */
+    const PLANS_BY_COVERAGE = {
+      'Medicare': [
+        'Medicare Part A & B (Traditional)',
+        'Medicare Part A & B with Plan F Supplement',
+        'Medicare Part A & B with Plan G Supplement',
+        'Medicare Part A & B with Plan N',
+      ],
+      'MA Plan': [
+        'Humana Gold Plus HMO',
+        'BCBS Medicare Advantage Prime',
+        'UnitedHealthcare AARP Medicare Advantage',
+        'Aetna Medicare Premier PPO',
+        'Wellcare Liberty HMO',
+        'Anthem Blue MedicareRx',
+        'Mutual of Omaha Medicare Choice',
+      ],
+      'Dual Eligible': [
+        'Medicare Part A & B + Oklahoma Medicaid',
+        'SoonerCare Dual Eligible',
+        'Wellcare Dual Special Needs Plan',
+      ],
+    };
+
+    const PRE_SEEDED_EXCEPTIONS_MAP = {
+      'PT-001823': { reason: 'MA plan enrollment change detected', urgency: 'high', flaggedAt: '09:38' },
+      'PT-001789': { reason: 'Coverage terminated by payer', urgency: 'high', flaggedAt: '09:21' },
+      'PT-001767': { reason: 'Dual eligibility shift', urgency: 'medium', flaggedAt: '08:54' },
+      'PT-001745': { reason: 'Address change affects service area', urgency: 'medium', flaggedAt: '08:32' },
+      'PT-001712': { reason: 'Plan termination pending', urgency: 'low', flaggedAt: '08:14' },
+    };
+
+    const SHORT_REASON = {
+      'MA plan enrollment change detected': 'MA plan enrollment change',
+      'Coverage terminated by payer': 'coverage termination',
+      'Dual eligibility shift': 'dual eligibility shift',
+      'Address change affects service area': 'address change affecting service area',
+      'Plan termination pending': 'plan termination',
+      'Secondary payer change': 'secondary payer change',
+    };
+
+    const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+    const fmtRelative = (ms) => {
+      const diff = Date.now() - ms;
+      if (diff < 60000) return `${Math.max(1, Math.floor(diff / 1000))} sec ago`;
+      if (diff < 3600000) return `${Math.floor(diff / 60000)} min ago`;
+      if (diff < 86400000) return `${Math.floor(diff / 3600000)} hr ago`;
+      return `${Math.floor(diff / 86400000)} days ago`;
+    };
+
+    const fmtClock = (ms) => {
+      const d = new Date(ms);
+      return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+    };
+    const fmtClockSec = (ms) => {
+      const d = new Date(ms);
+      return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+    };
+
+    let _hSeq = 0;
+    const histId = () => `h-${++_hSeq}`;
+
+    // Build a synthetic verification history for a pre-seeded patient.
+    const synthesizeHistory = (patient) => {
+      const entries = [];
+      const baseMs = patient.verifiedAt;
+      const tsBase = fmtClockSec(baseMs);
+      const tsBefore = fmtClockSec(baseMs - 4000);
+      if (patient.status === 'verified') {
+        entries.push({ id: histId(), ts: tsBefore, worker: 'Eligibility Verification', action: 'Querying CMS HETS for Medicare Part A and Part B status.', result: 'verified', durationMs: 1100 + randInt(-200, 400) });
+        entries.push({ id: histId(), ts: tsBase, worker: 'Eligibility Verification', action: 'Eligibility confirmed. Updated patient record.', result: 'verified', durationMs: 800 + randInt(-100, 300) });
+        if (Math.random() < 0.55) {
+          entries.push({ id: histId(), ts: fmtClockSec(baseMs + 2000), worker: 'Insurance Change Detection', action: 'Cross-referenced payer information. No changes detected.', result: 'no change', durationMs: 700 + randInt(-100, 200) });
+        }
+      } else if (patient.status === 'pending') {
+        entries.push({ id: histId(), ts: tsBase, worker: 'Eligibility Verification', action: 'Querying CMS HETS for Medicare Part A and Part B status.', result: 'pending', durationMs: 1100 });
+      } else if (patient.status === 'exception') {
+        entries.push({ id: histId(), ts: tsBefore, worker: 'Eligibility Verification', action: 'Querying CMS HETS for Medicare Part A and Part B status.', result: 'verified', durationMs: 1200 });
+        entries.push({ id: histId(), ts: fmtClockSec(baseMs - 2000), worker: 'Eligibility Verification', action: 'Eligibility confirmed.', result: 'verified', durationMs: 900 });
+        const sr = SHORT_REASON[patient.exceptionReason] || patient.exceptionReason.toLowerCase();
+        entries.push({ id: histId(), ts: tsBase, worker: 'Insurance Change Detection', action: `Detected ${sr}. Flagging for review.`, result: 'flagged', durationMs: 1000 });
+      }
+      return entries;
+    };
+
+    const generateInitialPatients = () => {
+      const patients = [];
+      const now = Date.now();
+      // PIDs from 1660 (oldest) to 1847 (most recent). Spread last verified across last 24h.
+      const total = 1847 - 1660 + 1;
+      for (let i = 1847; i >= 1660; i--) {
+        const id = `PT-${String(i).padStart(6, '0')}`;
+        const idx = 1847 - i;
+        const ageMs = idx * (24 * 3600 * 1000 / total);
+        const verifiedAt = now - ageMs - randInt(0, 60000);
+
+        const isException = !!PRE_SEEDED_EXCEPTIONS_MAP[id];
+        let status, exceptionReason, urgency, flaggedAt;
+        if (isException) {
+          const exc = PRE_SEEDED_EXCEPTIONS_MAP[id];
+          status = 'exception';
+          exceptionReason = exc.reason;
+          urgency = exc.urgency;
+          flaggedAt = exc.flaggedAt;
+        } else {
+          status = Math.random() < 0.025 ? 'pending' : 'verified';
+        }
+
+        const r = Math.random();
+        const coverage = r < 0.35 ? 'Medicare' : (r < 0.85 ? 'MA Plan' : 'Dual Eligible');
+        const plan = pickRandom(PLANS_BY_COVERAGE[coverage]);
+        const verifiedBy = Math.random() < 0.5 ? 'Eligibility Verification' : 'Insurance Change Detection';
+
+        const p = {
+          id, status, coverage, plan, verifiedAt, verifiedBy,
+          exceptionReason, urgency, flaggedAt,
+          coverageHistory: isException
+            ? [{ date: 'Today', label: PRE_SEEDED_EXCEPTIONS_MAP[id].reason, urgency, payer: plan.split(' ')[0] }]
+            : [],
+          notes: [],
+          history: [],
+          newlyAdded: false,
+        };
+        p.history = synthesizeHistory(p);
+        patients.push(p);
+      }
+      return patients;
+    };
+
+    /* =====================================================
+     *  SIMULATION ENGINE
+     * ===================================================== */
+    const initialTaskFor = (id) => {
+      switch (id) {
+        case 'w-elig': return 'Pulling next patient batch.';
+        case 'w-change': return 'Watching for payer changes.';
+        case 'w-triage': return 'Awaiting flagged exceptions.';
+        default: return 'Initializing.';
+      }
+    };
+
+    function useSimulation() {
+      const [workers, setWorkers] = useState(INITIAL_WORKERS);
+      const [feed, setFeed] = useState(INITIAL_FEED);
+      const [exceptions, setExceptions] = useState(INITIAL_EXCEPTIONS);
+      const [stats, setStats] = useState({
+        processedToday: 312,
+        processedMonth: 1847,
+        hoursSavedMonth: 64.5,
+        accuracy: 99.4,
+        lastActivityHM: '09:42',
+        liveLastMinute: 0,
+      });
+      const [throughput, setThroughput] = useState(buildSeedThroughput);
+      const [integrations, setIntegrations] = useState(INITIAL_INTEGRATIONS);
+      const [patients, setPatients] = useState(generateInitialPatients);
+
+      const nextPidRef = useRef(1848);
+      const triageQueueRef = useRef([]);   // exception ids waiting for triage routing
+      const workersRef = useRef(workers);
+      workersRef.current = workers;
+      const feedSeqRef = useRef(0);
+      const lastMinuteBucketRef = useRef([]); // [{ts, count}] last 60s
+
+      const anyRunning = useMemo(() => workers.some(w => w.status === 'running'), [workers]);
+
+      const pushFeed = useCallback((entry) => {
+        feedSeqRef.current += 1;
+        const _id = `f-${feedSeqRef.current}`;
+        setFeed(f => [{ ...entry, _id }, ...f].slice(0, 100));
+      }, []);
+
+      const incCurrentHourThroughput = useCallback(() => {
+        const h = new Date().getHours();
+        const label = `${pad2(h)}:00`;
+        setThroughput(t => t.map(b => b.hour === label ? { ...b, autonomous: b.autonomous + 1 } : b));
+      }, []);
+
+      const recordLiveTick = useCallback(() => {
+        const now = Date.now();
+        lastMinuteBucketRef.current.push(now);
+        // prune
+        lastMinuteBucketRef.current = lastMinuteBucketRef.current.filter(t => now - t < 60000);
+      }, []);
+
+      // Single-tick processor: process one patient through eligibility + change detection,
+      // plus possibly fire a triage routing.
+      const tickOnce = useCallback(() => {
+        const fresh = workersRef.current;
+        const eligOn = fresh.find(w => w.id === 'w-elig')?.status === 'running';
+        const changeOn = fresh.find(w => w.id === 'w-change')?.status === 'running';
+        const triageOn = fresh.find(w => w.id === 'w-triage')?.status === 'running';
+
+        const pidNum = nextPidRef.current;
+        nextPidRef.current = pidNum + 1;
+        const pid = `PT-${String(pidNum).padStart(6, '0')}`;
+        const ts = nowHMS();
+
+        let processedAny = false;
+
+        if (eligOn) {
+          const dur = randInt(900, 1700);
+          const useQueryingLine = Math.random() < 0.45;
+          const action = useQueryingLine
+            ? 'Querying CMS HETS for Medicare Part A and Part B status.'
+            : 'Eligibility confirmed. Updated patient record.';
+          pushFeed({ ts, worker: 'Eligibility Verification', patientId: pid, action, result: 'verified', durationMs: dur });
+
+          // Add a brand-new patient record at the top of the table.
+          const r = Math.random();
+          const coverage = r < 0.35 ? 'Medicare' : (r < 0.85 ? 'MA Plan' : 'Dual Eligible');
+          const plan = pickRandom(PLANS_BY_COVERAGE[coverage]);
+          const verifiedAt = Date.now();
+          const newPatient = {
+            id: pid,
+            status: 'verified',
+            coverage,
+            plan,
+            verifiedAt,
+            verifiedBy: 'Eligibility Verification',
+            exceptionReason: null,
+            urgency: null,
+            flaggedAt: null,
+            coverageHistory: [],
+            notes: [],
+            history: [
+              { id: histId(), ts, worker: 'Eligibility Verification', action, result: 'verified', durationMs: dur },
+            ],
+            newlyAdded: true,
+          };
+          setPatients(ps => [newPatient, ...ps]);
+          // Clear newlyAdded flag after the highlight animation completes.
+          setTimeout(() => {
+            setPatients(ps => ps.map(p => p.id === pid ? { ...p, newlyAdded: false } : p));
+          }, 1500);
+
+          setWorkers(ws => ws.map(w => w.id === 'w-elig' ? { ...w, tasksToday: w.tasksToday + 1, tasksWeek: w.tasksWeek + 1, tasksMonth: w.tasksMonth + 1, currentTask: `Verifying ${pid}` } : w));
+          processedAny = true;
+        }
+
+        if (changeOn) {
+          // Slight delay to simulate chained processing.
+          setTimeout(() => {
+            // Drop the action if the worker has been stopped or paused since this tick fired.
+            const stillOn = workersRef.current.find(w => w.id === 'w-change')?.status === 'running';
+            if (!stillOn) return;
+            const flagged = Math.random() < 0.04;
+            const ts2 = nowHMS();
+            if (flagged) {
+              const rsn = pickWeighted(EXCEPTION_REASONS);
+              pushFeed({ ts: ts2, worker: 'Insurance Change Detection', patientId: pid, action: `Detected ${rsn.shortAction}. Flagging for review.`, result: 'flagged', durationMs: randInt(800, 1200) });
+              const exc = { id: `ex-${Date.now()}-${Math.random().toString(36).slice(2,6)}`, patientId: pid, reason: rsn.reason, urgency: rsn.urgency, flaggedAt: nowHM() };
+              setExceptions(ex => [exc, ...ex].slice(0, 50));
+              triageQueueRef.current.push(exc);
+              // Update the patient record's status to exception.
+              setPatients(ps => ps.map(p => p.id === pid ? {
+                ...p,
+                status: 'exception',
+                exceptionReason: rsn.reason,
+                urgency: rsn.urgency,
+                flaggedAt: nowHM(),
+                coverageHistory: [{ date: 'Today', label: rsn.reason, urgency: rsn.urgency, payer: p.plan ? p.plan.split(' ')[0] : 'Payer' }, ...p.coverageHistory],
+                history: [...p.history, { id: histId(), ts: ts2, worker: 'Insurance Change Detection', action: `Detected ${rsn.shortAction}. Flagging for review.`, result: 'flagged', durationMs: randInt(800, 1200) }],
+              } : p));
+            } else {
+              const noChangeDur = randInt(550, 850);
+              pushFeed({ ts: ts2, worker: 'Insurance Change Detection', patientId: pid, action: 'Cross-referenced payer information. No changes detected.', result: 'no change', durationMs: noChangeDur });
+              // Append "no change" to the patient's history.
+              setPatients(ps => ps.map(p => p.id === pid ? {
+                ...p,
+                history: [...p.history, { id: histId(), ts: ts2, worker: 'Insurance Change Detection', action: 'Cross-referenced payer information. No changes detected.', result: 'no change', durationMs: noChangeDur }],
+              } : p));
+            }
+            setWorkers(ws => ws.map(w => w.id === 'w-change' ? { ...w, tasksToday: w.tasksToday + 1, tasksWeek: w.tasksWeek + 1, tasksMonth: w.tasksMonth + 1, exceptionsFlagged: flagged ? w.exceptionsFlagged + 1 : w.exceptionsFlagged, currentTask: flagged ? `Flagged ${pid}` : `Checked ${pid}` } : w));
+          }, randInt(180, 360));
+        }
+
+        if (triageOn && triageQueueRef.current.length > 0 && Math.random() < 0.55) {
+          setTimeout(() => {
+            const stillOn = workersRef.current.find(w => w.id === 'w-triage')?.status === 'running';
+            if (!stillOn) return;
+            const exc = triageQueueRef.current.shift();
+            if (!exc) return;
+            const dur = randInt(1500, 2200);
+            const ts3 = nowHMS();
+            pushFeed({ ts: ts3, worker: 'Exception Triage', patientId: exc.patientId, action: 'Routed to billing team. Recommended action attached.', result: 'routed', durationMs: dur });
+            setExceptions(ex => ex.filter(e => e.id !== exc.id));
+            setPatients(ps => ps.map(p => p.id === exc.patientId ? {
+              ...p,
+              history: [...p.history, { id: histId(), ts: ts3, worker: 'Exception Triage', action: 'Routed to billing team. Recommended action attached.', result: 'routed', durationMs: dur }],
+            } : p));
+            setWorkers(ws => ws.map(w => w.id === 'w-triage' ? { ...w, tasksToday: w.tasksToday + 1, tasksWeek: w.tasksWeek + 1, tasksMonth: w.tasksMonth + 1, currentTask: `Routed ${exc.patientId}` } : w));
+          }, randInt(400, 700));
+        }
+
+        if (processedAny) {
+          recordLiveTick();
+          incCurrentHourThroughput();
+          setStats(s => ({
+            ...s,
+            processedToday: s.processedToday + 1,
+            processedMonth: s.processedMonth + 1,
+            hoursSavedMonth: s.hoursSavedMonth + 0.034,
+            lastActivityHM: nowHM(),
+          }));
+        }
+      }, [pushFeed, incCurrentHourThroughput, recordLiveTick]);
+
+      // Main tick loop: schedules itself with natural jitter as long as any worker is running.
+      useEffect(() => {
+        if (!anyRunning) return;
+        let cancelled = false;
+        let timeoutId = null;
+        const loop = () => {
+          if (cancelled) return;
+          tickOnce();
+          const next = randInt(800, 2000);
+          timeoutId = setTimeout(loop, next);
+        };
+        timeoutId = setTimeout(loop, 600);
+        return () => { cancelled = true; if (timeoutId) clearTimeout(timeoutId); };
+      }, [anyRunning, tickOnce]);
+
+      // Update "live last minute" stat once a second.
+      useEffect(() => {
+        const t = setInterval(() => {
+          const now = Date.now();
+          const cnt = lastMinuteBucketRef.current.filter(x => now - x < 60000).length;
+          setStats(s => s.liveLastMinute === cnt ? s : { ...s, liveLastMinute: cnt });
+        }, 1000);
+        return () => clearInterval(t);
+      }, []);
+
+      // Integration pings: refresh "last sync" every 8s.
+      useEffect(() => {
+        const t = setInterval(() => {
+          setIntegrations(prev => prev.map(p => {
+            const seconds = randInt(20, 240);
+            const label = seconds < 60 ? `${seconds} sec ago` : `${Math.round(seconds / 60)} min ago`;
+            return { ...p, lastSync: label };
+          }));
+        }, 8000);
+        return () => clearInterval(t);
+      }, []);
+
+      // Workflow step cycler: each running worker advances through its workflow steps.
+      useEffect(() => {
+        if (!anyRunning) return;
+        const t = setInterval(() => {
+          setWorkers(ws => ws.map(w => {
+            if (w.status !== 'running') return w;
+            const wf = WORKFLOWS[w.id];
+            if (!wf) return w;
+            const cur = (w.currentStep == null) ? 0 : (w.currentStep + 1) % wf.length;
+            return { ...w, currentStep: cur };
+          }));
+        }, 380);
+        return () => clearInterval(t);
+      }, [anyRunning]);
+
+      const startAll = useCallback(() => {
+        setWorkers(ws => ws.map(w => ({ ...w, status: 'running', currentStep: 0, currentTask: initialTaskFor(w.id) })));
+      }, []);
+      const stopAll = useCallback(() => {
+        setWorkers(ws => ws.map(w => ({ ...w, status: 'idle', currentStep: null, currentTask: 'Idle. Awaiting workforce start.' })));
+      }, []);
+      const toggleAll = useCallback(() => {
+        const allIdle = workersRef.current.every(w => w.status === 'idle');
+        if (allIdle) startAll(); else stopAll();
+      }, [startAll, stopAll]);
+      const toggleWorker = useCallback((id) => {
+        setWorkers(ws => ws.map(w => w.id === id
+          ? { ...w, status: w.status === 'idle' ? 'running' : 'idle', currentStep: w.status === 'idle' ? 0 : null, currentTask: w.status === 'idle' ? initialTaskFor(id) : 'Idle. Awaiting workforce start.' }
+          : w));
+      }, []);
+      const pauseWorker = useCallback((id) => {
+        setWorkers(ws => ws.map(w => {
+          if (w.id !== id) return w;
+          if (w.status === 'paused') return { ...w, status: 'running', currentStep: 0, currentTask: initialTaskFor(id) };
+          if (w.status === 'running') return { ...w, status: 'paused', currentTask: 'Paused. Holding state.' };
+          return w;
+        }));
+      }, []);
+
+      // Resolve an exception manually (legacy helper).
+      const resolveException = useCallback((id) => {
+        setExceptions(ex => ex.filter(e => e.id !== id));
+        triageQueueRef.current = triageQueueRef.current.filter(e => e.id !== id);
+      }, []);
+
+      /* Patient-level actions wired from the Patient Detail Modal. */
+      const REVIEWER_NAMES = ['Lola Edwards', 'Marcus Hill', 'Priya Shah', 'Daniel Reyes'];
+
+      const _appendPatientHistory = (pid, entry) => {
+        setPatients(ps => ps.map(p => p.id === pid ? { ...p, history: [...p.history, { id: histId(), ...entry }] } : p));
+      };
+
+      const approvePatientException = useCallback((pid) => {
+        const ts = nowHMS();
+        setPatients(ps => ps.map(p => p.id === pid ? {
+          ...p,
+          status: 'verified',
+          exceptionReason: null,
+          urgency: null,
+          flaggedAt: null,
+          history: [...p.history, { id: histId(), ts, worker: 'Lola Edwards (reviewer)', action: 'Reviewer approved exception. Marking patient verified.', result: 'verified', durationMs: 0 }],
+        } : p));
+        setExceptions(ex => ex.filter(e => e.patientId !== pid));
+        triageQueueRef.current = triageQueueRef.current.filter(e => e.patientId !== pid);
+      }, []);
+
+      const rejectPatientException = useCallback((pid) => {
+        const ts = nowHMS();
+        setPatients(ps => ps.map(p => p.id === pid ? {
+          ...p,
+          status: 'verified',
+          exceptionReason: null,
+          urgency: null,
+          flaggedAt: null,
+          history: [...p.history, { id: histId(), ts, worker: 'Lola Edwards (reviewer)', action: 'Reviewer rejected exception. Coverage reconfirmed and patient marked verified.', result: 'verified', durationMs: 0 }],
+        } : p));
+        setExceptions(ex => ex.filter(e => e.patientId !== pid));
+        triageQueueRef.current = triageQueueRef.current.filter(e => e.patientId !== pid);
+      }, []);
+
+      const reassignPatientException = useCallback((pid) => {
+        const ts = nowHMS();
+        const reviewer = pickRandom(REVIEWER_NAMES.filter(n => n !== 'Lola Edwards'));
+        setPatients(ps => ps.map(p => p.id === pid ? {
+          ...p,
+          history: [...p.history, { id: histId(), ts, worker: 'Lola Edwards (reviewer)', action: `Reassigned exception review to ${reviewer}.`, result: 'flagged', durationMs: 0 }],
+        } : p));
+      }, []);
+
+      const addPatientNote = useCallback((pid, note) => {
+        if (!note || !note.trim()) return;
+        const ts = nowHMS();
+        setPatients(ps => ps.map(p => p.id === pid ? {
+          ...p,
+          notes: [...p.notes, { id: histId(), ts, text: note.trim(), author: 'Lola Edwards' }],
+          history: [...p.history, { id: histId(), ts, worker: 'Lola Edwards (reviewer)', action: `Note added: "${note.trim()}"`, result: 'note', durationMs: 0 }],
+        } : p));
+      }, []);
+
+      return {
+        workers, feed, exceptions, stats, throughput, integrations, patients,
+        anyRunning,
+        toggleAll, startAll, stopAll, toggleWorker, pauseWorker, resolveException,
+        approvePatientException, rejectPatientException, reassignPatientException, addPatientNote,
+      };
+    }
+
+    /* =====================================================
+     *  PRIMITIVES
+     * ===================================================== */
+    const StatusBadge = ({ tone = 'neutral', dot = true, children, pulse = false }) => {
+      const map = {
+        success: { bg: '#DCFCE7', fg: '#166534', dot: '#16A34A' },
+        warning: { bg: '#FEF3C7', fg: '#92400E', dot: '#D97706' },
+        error:   { bg: '#FEE2E2', fg: '#991B1B', dot: '#DC2626' },
+        info:    { bg: '#DCE7F3', fg: '#0F4C81', dot: '#0F4C81' },
+        neutral: { bg: '#F3F4F6', fg: '#4B5563', dot: '#6B7280' },
+      };
+      const c = map[tone] || map.neutral;
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium" style={{ background: c.bg, color: c.fg }}>
+          {dot && <span className={`w-1.5 h-1.5 rounded-full ${pulse ? 'pulse-dot' : ''}`} style={{ background: c.dot }} />}
+          {children}
+        </span>
+      );
+    };
+
+    const Card = ({ title, subtitle, action, children, className = '', bodyClassName = 'p-5' }) => (
+      <div className={`card card-elev ${className}`}>
+        {(title || action) && (
+          <div className="flex items-start justify-between px-5 pt-4 pb-3 border-b border-[#F0F1F3]">
+            <div>
+              {title && <h3 className="text-[13px] font-semibold text-gray-900 tracking-tight">{title}</h3>}
+              {subtitle && <p className="text-[11px] text-gray-500 mt-0.5">{subtitle}</p>}
+            </div>
+            {action}
+          </div>
+        )}
+        <div className={bodyClassName}>{children}</div>
+      </div>
+    );
+
+    const ResultPill = ({ result }) => {
+      const r = (result || '').toLowerCase();
+      if (r === 'verified' || r === 'no change') return <StatusBadge tone="success" dot={false}>{result}</StatusBadge>;
+      if (r === 'flagged') return <StatusBadge tone="warning" dot={false}>flagged</StatusBadge>;
+      if (r === 'routed') return <StatusBadge tone="info" dot={false}>routed</StatusBadge>;
+      if (r === 'pending') return <StatusBadge tone="info" dot={false}>pending</StatusBadge>;
+      if (r === 'note') return <StatusBadge tone="neutral" dot={false}>note</StatusBadge>;
+      return <StatusBadge tone="neutral" dot={false}>{result}</StatusBadge>;
+    };
+
+    const UrgencyPill = ({ level }) => {
+      const tone = level === 'high' ? 'error' : level === 'medium' ? 'warning' : 'neutral';
+      return <StatusBadge tone={tone} dot={false}>{level}</StatusBadge>;
+    };
+
+    // AnimatedNumber: smoothly transitions between consecutive values.
+    const AnimatedNumber = ({ value, format = fmtInt, duration = 500 }) => {
+      const [shown, setShown] = useState(value);
+      const fromRef = useRef(value);
+      const toRef = useRef(value);
+      const startRef = useRef(0);
+
+      useEffect(() => {
+        fromRef.current = shown;
+        toRef.current = value;
+        startRef.current = performance.now();
+        let raf;
+        const step = (now) => {
+          const t = Math.min(1, (now - startRef.current) / duration);
+          const eased = 1 - Math.pow(1 - t, 3);
+          const v = fromRef.current + (toRef.current - fromRef.current) * eased;
+          setShown(v);
+          if (t < 1) raf = requestAnimationFrame(step);
+        };
+        raf = requestAnimationFrame(step);
+        return () => cancelAnimationFrame(raf);
+      }, [value]);
+
+      return <span>{format(shown)}</span>;
+    };
+
+    /* =====================================================
+     *  HEADER / SIDEBAR / FOOTER
+     * ===================================================== */
+    const Logo = () => (
+      <div className="flex items-center gap-2.5 select-none">
+        <div className="w-8 h-8 rounded-md bg-brand-navy flex items-center justify-center shadow-sm">
+          <span className="text-white font-bold text-[13px] tracking-tight">CO</span>
+        </div>
+        <div className="flex flex-col leading-none">
+          <span className="text-[14px] font-semibold text-gray-900 tracking-tight">Complete OK</span>
+          <span className="text-[9.5px] text-gray-500 mt-0.5 tracking-[0.12em] uppercase">Home Health</span>
+        </div>
+      </div>
+    );
+
+    const Header = ({ onToggleSidebar, anyRunning, exceptionsCount }) => (
+      <header className="h-14 bg-white border-b border-[#EAEAEC] flex items-center px-4 gap-4 shrink-0 z-30">
+        <button onClick={onToggleSidebar} className="w-8 h-8 rounded hover:bg-gray-100 flex items-center justify-center text-gray-600 focus-ring" title="Toggle navigation">
+          <Icon name="menu" size={18} />
+        </button>
+        <Logo />
+        <div className="h-6 w-px bg-[#EAEAEC] mx-1" />
+        <div className="flex items-baseline gap-2">
+          <span className="text-[13px] font-medium text-gray-900">Operations Intelligence Platform</span>
+          <span className="text-[11px] text-gray-400 font-mono">v1.0</span>
+        </div>
+
+        <div className="flex-1 flex justify-center">
+          <div className="relative w-full max-w-[480px]">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+              <Icon name="search" size={15} />
+            </span>
+            <input
+              type="text"
+              placeholder="Search patients, workers, or activity..."
+              className="w-full h-9 pl-9 pr-3 text-[13px] bg-[#F5F5F7] border border-transparent rounded-md focus:bg-white focus:border-[#D1D5DB] focus:outline-none transition-colors"
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium ${anyRunning ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#F3F4F6] text-[#4B5563]'}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${anyRunning ? 'pulse-dot' : ''}`} style={{ background: anyRunning ? '#16A34A' : '#9CA3AF' }} />
+            {anyRunning ? 'Workforce active' : 'All systems healthy'}
+          </div>
+          <button className="relative w-9 h-9 rounded hover:bg-gray-100 flex items-center justify-center text-gray-600 focus-ring" title="Notifications">
+            <Icon name="bell" size={17} />
+            {exceptionsCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 min-w-[16px] h-4 px-1 bg-[#DC2626] text-white text-[10px] font-semibold rounded-full flex items-center justify-center leading-none">{exceptionsCount}</span>
+            )}
+          </button>
+          <div className="h-6 w-px bg-[#EAEAEC] mx-1" />
+          <button className="flex items-center gap-2 pl-1 pr-2 py-1 rounded hover:bg-gray-100 focus-ring" title="Account">
+            <div className="w-7 h-7 rounded-full bg-brand-navy text-white flex items-center justify-center text-[11px] font-semibold">LE</div>
+            <div className="flex flex-col items-start leading-tight">
+              <span className="text-[12px] font-medium text-gray-900">Lola Edwards</span>
+              <span className="text-[10px] text-gray-500">Billing Operations</span>
+            </div>
+            <Icon name="chevron-down" size={14} className="text-gray-400" />
+          </button>
+        </div>
+      </header>
+    );
+
+    const NAV = [
+      { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
+      { id: 'workforce', label: 'Workforce', icon: 'users' },
+      { id: 'patients', label: 'Patient Operations', icon: 'clipboard' },
+      { id: 'analytics', label: 'Analytics', icon: 'chart' },
+    ];
+
+    const Sidebar = ({ collapsed, page, onNavigate }) => (
+      <aside
+        className="bg-white border-r border-[#EAEAEC] flex flex-col shrink-0 transition-[width] duration-200 ease-in-out"
+        style={{ width: collapsed ? 64 : 232 }}
+      >
+        <div className="px-3 py-4 flex flex-col gap-1">
+          {NAV.map(item => {
+            const active = page === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onNavigate(item.id)}
+                className={`nav-item ${active ? 'active' : 'text-gray-700'} group relative flex items-center gap-3 h-9 rounded-md text-[13px] font-medium ${collapsed ? 'justify-center px-0' : 'px-3'}`}
+                title={collapsed ? item.label : undefined}
+              >
+                <span className={`nav-bar absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r ${active ? '' : 'bg-transparent'}`} />
+                <Icon name={item.icon} size={17} className={active ? 'text-[#0F4C81]' : 'text-gray-500'} />
+                {!collapsed && <span className="truncate">{item.label}</span>}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-auto px-3 pb-4 border-t border-[#F0F1F3] pt-4 flex flex-col gap-1">
+          <button className={`nav-item text-gray-600 flex items-center gap-3 h-9 rounded-md text-[13px] font-medium ${collapsed ? 'justify-center px-0' : 'px-3'}`} title="Settings">
+            <Icon name="settings" size={17} className="text-gray-500" />
+            {!collapsed && <span>Settings</span>}
+          </button>
+          <button className={`nav-item text-gray-600 flex items-center gap-3 h-9 rounded-md text-[13px] font-medium ${collapsed ? 'justify-center px-0' : 'px-3'}`} title="Help">
+            <Icon name="help" size={17} className="text-gray-500" />
+            {!collapsed && <span>Help & support</span>}
+          </button>
+        </div>
+      </aside>
+    );
+
+    const Footer = () => (
+      <footer className="h-9 bg-white border-t border-[#EAEAEC] px-5 flex items-center justify-between text-[11px] text-gray-500 shrink-0">
+        <div className="flex items-center gap-4">
+          <span>Powered by Neuralogic</span>
+          <span className="text-gray-300">|</span>
+          <span>Build 1.0.0 (rapid prototype)</span>
+        </div>
+        <div className="flex items-center gap-4">
+          <a className="hover:text-gray-700" href="#">Privacy</a>
+          <a className="hover:text-gray-700" href="#">Terms</a>
+          <a className="hover:text-gray-700" href="#">HIPAA</a>
+          <span className="text-gray-300">|</span>
+          <span>© 2026 Complete OK Home Health</span>
+        </div>
+      </footer>
+    );
+
+    /* =====================================================
+     *  KPI CARDS (live)
+     * ===================================================== */
+    const KPICard = ({ label, value, sub, icon, tone = 'info' }) => {
+      const toneMap = { info: '#0F4C81', success: '#16A34A', warning: '#D97706', error: '#DC2626', neutral: '#6B7280' };
+      const c = toneMap[tone];
+      return (
+        <div className="card card-elev p-4 hover:border-[#D1D5DB] transition-colors cursor-pointer">
+          <div className="flex items-start justify-between mb-2.5">
+            <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wide leading-tight pr-2">{label}</span>
+            <div className="w-7 h-7 rounded flex items-center justify-center" style={{ background: `${c}14`, color: c }}>
+              <Icon name={icon} size={15} />
+            </div>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-[28px] font-semibold text-gray-900 tracking-tight leading-none">{value}</span>
+          </div>
+          <div className="mt-2 text-[11.5px] text-gray-500 truncate">{sub}</div>
+        </div>
+      );
+    };
+
+    const KPIStrip = ({ stats, workers, exceptions, anyRunning }) => {
+      const activeCount = workers.filter(w => w.status === 'running').length;
+      const pausedCount = workers.filter(w => w.status === 'paused').length;
+      const highUrgent = exceptions.filter(e => e.urgency === 'high').length;
+      return (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          <KPICard
+            label="Patients Processed This Month"
+            value={<AnimatedNumber value={stats.processedMonth} />}
+            sub="of 2,100 monthly target"
+            icon="check-circle"
+            tone="info"
+          />
+          <KPICard
+            label="Hours Saved This Month"
+            value={<AnimatedNumber value={stats.hoursSavedMonth} format={fmt1} />}
+            sub="vs 72-hour manual baseline"
+            icon="clock"
+            tone="success"
+          />
+          <KPICard
+            label="Active Workers"
+            value={<span>{activeCount}{pausedCount ? <span className="text-[14px] text-gray-400 ml-1">({pausedCount} paused)</span> : null}</span>}
+            sub={anyRunning ? `${stats.liveLastMinute} actions in last 60 sec` : '3 idle, ready to start'}
+            icon="users"
+            tone={anyRunning ? 'success' : 'neutral'}
+          />
+          <KPICard
+            label="Exceptions Pending Review"
+            value={<AnimatedNumber value={exceptions.length} />}
+            sub={highUrgent > 0 ? `${highUrgent} high urgency` : 'All low to medium'}
+            icon="alert"
+            tone={highUrgent > 0 ? 'warning' : 'neutral'}
+          />
+          <KPICard
+            label="Eligibility Verification Accuracy"
+            value={`${stats.accuracy}%`}
+            sub="rolling 30-day"
+            icon="shield"
+            tone="success"
+          />
+        </div>
+      );
+    };
+
+    /* =====================================================
+     *  MASTER CONTROL
+     * ===================================================== */
+    const MasterControlBar = ({ anyRunning, onToggle, lastActivityHM, runningCount, liveLastMinute }) => (
+      <div className="card card-elev p-4 flex items-center gap-5">
+        <div className="flex items-center gap-3">
+          <div className="relative w-10 h-10 rounded-full flex items-center justify-center" style={{ background: anyRunning ? '#DCFCE7' : '#F3F4F6' }}>
+            {anyRunning && <span className="absolute inset-0 rounded-full pulse-ring" style={{ background: '#16A34A' }} />}
+            <span className="w-3 h-3 rounded-full relative" style={{ background: anyRunning ? '#16A34A' : '#9CA3AF' }} />
+          </div>
+          <div>
+            <div className="text-[12px] text-gray-500 uppercase tracking-wide font-medium">Workforce Status</div>
+            <div className="text-[15px] font-semibold text-gray-900">{anyRunning ? `Operational. ${runningCount} of 3 workers running.` : 'Idle. All workers stopped.'}</div>
+          </div>
+        </div>
+
+        <div className="h-10 w-px bg-[#EAEAEC]" />
+
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[10.5px] text-gray-500 uppercase tracking-wide font-medium">Last activity</span>
+          <span className="text-[13px] text-gray-800 font-medium">{anyRunning ? 'Streaming now' : `Today at ${lastActivityHM} CDT`}</span>
+        </div>
+
+        <div className="h-10 w-px bg-[#EAEAEC]" />
+
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[10.5px] text-gray-500 uppercase tracking-wide font-medium">Throughput</span>
+          <span className="text-[13px] text-gray-800 font-medium">{anyRunning ? `${liveLastMinute} actions / min` : 'Awaiting start'}</span>
+        </div>
+
+        <div className="ml-auto flex items-center gap-2">
+          <button className="h-9 px-3 text-[12.5px] font-medium text-gray-700 border border-[#D1D5DB] bg-white hover:bg-gray-50 rounded-md focus-ring inline-flex items-center gap-1.5">
+            <Icon name="settings" size={13} /> Configure
+          </button>
+          <button
+            onClick={onToggle}
+            className={`h-9 px-4 text-[13px] font-semibold rounded-md inline-flex items-center gap-2 focus-ring shadow-sm transition-colors ${anyRunning ? 'bg-[#A4262C] text-white hover:bg-[#8B1F25]' : 'bg-brand-navy text-white hover-brand-navy'}`}
+          >
+            <Icon name={anyRunning ? 'stop' : 'play'} size={13} strokeWidth={2.25} />
+            {anyRunning ? 'Stop All Workers' : 'Start All Workers'}
+          </button>
+        </div>
+      </div>
+    );
+
+    /* =====================================================
+     *  ACTIVITY FEED
+     * ===================================================== */
+    const ActivityFeed = ({ entries, anyRunning }) => (
+      <Card
+        title="Live Activity Feed"
+        subtitle={anyRunning ? 'Streaming actions from running workers.' : 'Showing the most recent actions before workforce was stopped.'}
+        action={
+          <div className="flex items-center gap-2">
+            <StatusBadge tone={anyRunning ? 'success' : 'neutral'} pulse={anyRunning}>{anyRunning ? 'live' : 'paused'}</StatusBadge>
+            <button className="text-[11.5px] text-[#0F4C81] font-medium hover:underline">Open full log</button>
+          </div>
+        }
+        bodyClassName=""
+      >
+        <div className={`max-h-[420px] overflow-auto ${anyRunning ? '' : ''}`}>
+          <table className="w-full text-[12px]">
+            <thead className="sticky top-0 bg-white z-10">
+              <tr className="text-left text-[10.5px] font-semibold text-gray-500 uppercase tracking-wide border-b border-[#F0F1F3]">
+                <th className="px-5 py-2.5 w-[78px]">Time</th>
+                <th className="px-2 py-2.5 w-[180px]">Worker</th>
+                <th className="px-2 py-2.5 w-[96px]">Patient</th>
+                <th className="px-2 py-2.5">Action</th>
+                <th className="px-2 py-2.5 w-[92px]">Result</th>
+                <th className="px-5 py-2.5 w-[64px] text-right">ms</th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map((e) => (
+                <tr key={e._id} className="border-t border-[#F0F1F3] hover:bg-[#FAFAFA] fade-in-row">
+                  <td className="px-5 py-2.5 text-gray-500 font-mono text-[11.5px]">{e.ts}</td>
+                  <td className="px-2 py-2.5 text-gray-800">{e.worker}</td>
+                  <td className="px-2 py-2.5 font-mono text-[11.5px] text-[#0F4C81]">{e.patientId}</td>
+                  <td className="px-2 py-2.5 text-gray-700">{e.action}</td>
+                  <td className="px-2 py-2.5"><ResultPill result={e.result} /></td>
+                  <td className="px-5 py-2.5 text-right text-gray-500 font-mono text-[11.5px]">{e.durationMs}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    );
+
+    /* =====================================================
+     *  WORKFORCE PANEL
+     * ===================================================== */
+    const WorkerStatusCard = ({ worker, onToggle, onPause, onOpen }) => {
+      const isRunning = worker.status === 'running';
+      const isPaused = worker.status === 'paused';
+      const tone = isRunning ? 'success' : isPaused ? 'warning' : 'neutral';
+      const label = isRunning ? 'Running' : isPaused ? 'Paused' : 'Idle';
+      const stop = (fn) => (e) => { e.stopPropagation(); fn(); };
+      return (
+        <div
+          onClick={() => onOpen && onOpen(worker.id)}
+          className={`relative border rounded-md p-3.5 bg-white hover:border-[#D1D5DB] cursor-pointer transition-colors ${isRunning ? 'border-[#BBF7D0]' : 'border-[#EAEAEC]'}`}
+        >
+          {isRunning && <span className="absolute top-3 left-0 w-[3px] h-6 rounded-r bg-[#16A34A]" />}
+          <div className="flex items-start justify-between mb-2">
+            <div className="min-w-0 pr-2">
+              <div className="text-[13px] font-semibold text-gray-900 truncate">{worker.name}</div>
+              <div className="text-[11px] text-gray-500 mt-0.5 line-clamp-2">{worker.role}</div>
+            </div>
+            <StatusBadge tone={tone} pulse={isRunning}>{label}</StatusBadge>
+          </div>
+          <div className="grid grid-cols-3 gap-2 mt-3">
+            <div className="bg-[#F9FAFB] rounded px-2 py-1.5">
+              <div className="text-[10px] text-gray-500 uppercase tracking-wide">Today</div>
+              <div className="text-[14px] font-semibold text-gray-900 leading-tight"><AnimatedNumber value={worker.tasksToday} /></div>
+            </div>
+            <div className="bg-[#F9FAFB] rounded px-2 py-1.5">
+              <div className="text-[10px] text-gray-500 uppercase tracking-wide">Avg time</div>
+              <div className="text-[14px] font-semibold text-gray-900 leading-tight">{worker.avgDurationSec}s</div>
+            </div>
+            <div className="bg-[#F9FAFB] rounded px-2 py-1.5">
+              <div className="text-[10px] text-gray-500 uppercase tracking-wide">Success</div>
+              <div className="text-[14px] font-semibold text-gray-900 leading-tight">{worker.successRate}%</div>
+            </div>
+          </div>
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <div className="text-[11px] text-gray-500 truncate flex-1">{worker.currentTask}</div>
+            <div className="flex items-center gap-1 shrink-0">
+              {(isRunning || isPaused) && (
+                <button
+                  onClick={stop(() => onPause(worker.id))}
+                  className="h-7 w-7 rounded inline-flex items-center justify-center bg-[#FEF3C7] text-[#92400E] hover:bg-[#FDE68A]"
+                  title={isPaused ? 'Resume' : 'Pause'}
+                >
+                  <Icon name={isPaused ? 'play' : 'pause'} size={11} strokeWidth={2.25} />
+                </button>
+              )}
+              <button
+                onClick={stop(() => onToggle(worker.id))}
+                className={`h-7 px-2.5 text-[11.5px] font-medium rounded inline-flex items-center gap-1 ${isRunning || isPaused ? 'bg-[#FEE2E2] text-[#991B1B] hover:bg-[#FECACA]' : 'bg-brand-navy text-white hover-brand-navy'}`}
+              >
+                <Icon name={isRunning || isPaused ? 'stop' : 'play'} size={11} strokeWidth={2.25} />
+                {isRunning || isPaused ? 'Stop' : 'Start'}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const WorkforcePanel = ({ workers, onToggleWorker, onPauseWorker, onOpenWorker }) => (
+      <Card
+        title="Workforce Status"
+        subtitle="Click any worker to drill into their workflow."
+        action={<button className="text-[11.5px] text-[#0F4C81] font-medium hover:underline">View all</button>}
+      >
+        <div className="space-y-2.5">
+          {workers.map(w => <WorkerStatusCard key={w.id} worker={w} onToggle={onToggleWorker} onPause={onPauseWorker} onOpen={onOpenWorker} />)}
+        </div>
+      </Card>
+    );
+
+    /* =====================================================
+     *  EXCEPTIONS PANEL
+     * ===================================================== */
+    const ExceptionsPanel = ({ items, onOpenPatient, onViewAll }) => {
+      const top = items.slice(0, 5);
+      return (
+        <Card
+          title="Exceptions Pending Review"
+          subtitle={`${items.length} cases flagged for human review.`}
+          action={<button onClick={onViewAll} className="text-[11.5px] text-[#0F4C81] font-medium hover:underline">View all</button>}
+          bodyClassName="p-0"
+        >
+          {top.length === 0 ? (
+            <div className="px-5 py-10 text-center text-[12.5px] text-gray-500">All exceptions cleared. Excellent.</div>
+          ) : (
+            <ul className="divide-y divide-[#F0F1F3]">
+              {top.map(x => (
+                <li
+                  key={x.id}
+                  onClick={() => onOpenPatient && onOpenPatient(x.patientId)}
+                  className="px-5 py-3 hover:bg-[#FAFAFA] cursor-pointer flex items-center justify-between fade-in-row"
+                >
+                  <div className="min-w-0 pr-3">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-[12px] text-[#0F4C81] font-medium">{x.patientId}</span>
+                      <UrgencyPill level={x.urgency} />
+                    </div>
+                    <div className="text-[12px] text-gray-700 mt-0.5 truncate">{x.reason}</div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[11px] text-gray-500 font-mono">{x.flaggedAt}</span>
+                    <Icon name="chevron-right" size={14} className="text-gray-400" />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      );
+    };
+
+    /* =====================================================
+     *  THROUGHPUT CHART (live)
+     * ===================================================== */
+    const ThroughputChart = ({ data, anyRunning }) => (
+      <Card
+        title="Workflow Throughput, Last 24 Hours"
+        subtitle="Patients processed per hour. Manual baseline shows the cadence of the prior process."
+        action={
+          <div className="flex items-center gap-3 text-[11px] text-gray-600">
+            <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#0F4C81]" /> Autonomous</span>
+            <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: '#D1D5DB' }} /> Manual baseline</span>
+            {anyRunning && <StatusBadge tone="success" pulse>live</StatusBadge>}
+          </div>
+        }
+      >
+        <div style={{ width: '100%', height: 260 }}>
+          <ResponsiveContainer>
+            <AreaChart data={data} margin={{ top: 6, right: 8, left: -16, bottom: 0 }}>
+              <defs>
+                <linearGradient id="autoFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#0F4C81" stopOpacity={0.18}/>
+                  <stop offset="100%" stopColor="#0F4C81" stopOpacity={0.02}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="0" vertical={false} />
+              <XAxis dataKey="hour" interval={2} tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={{ stroke: '#EAEAEC' }} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} />
+              <Tooltip
+                contentStyle={{ background: '#1F2937', border: 'none', borderRadius: 6, fontSize: 12, padding: '8px 10px' }}
+                labelStyle={{ color: '#9CA3AF', marginBottom: 4, fontSize: 11 }}
+                itemStyle={{ color: '#FFFFFF' }}
+                formatter={(v, n) => [`${v} patients/hr`, n === 'autonomous' ? 'Autonomous' : 'Manual baseline']}
+              />
+              <Area type="monotone" dataKey="manual" stroke="#9CA3AF" strokeWidth={1.5} fill="transparent" strokeDasharray="4 3" dot={false} isAnimationActive={false} />
+              <Area type="monotone" dataKey="autonomous" stroke="#0F4C81" strokeWidth={2} fill="url(#autoFill)" dot={false} activeDot={{ r: 4 }} isAnimationActive={false} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
+    );
+
+    /* =====================================================
+     *  INTEGRATION STATUS (live pings)
+     * ===================================================== */
+    const IntegrationStatusWidget = ({ integrations }) => (
+      <Card
+        title="Integration Status"
+        subtitle="Live connections to operational systems."
+        action={<button className="text-[11.5px] text-[#0F4C81] font-medium hover:underline">Diagnostics</button>}
+      >
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+          {integrations.map(int => (
+            <div key={int.name} className="border border-[#EAEAEC] rounded-md px-3 py-2.5 flex items-center gap-3">
+              <div className="w-8 h-8 rounded bg-[#F0F5FB] text-[#0F4C81] flex items-center justify-center">
+                <Icon name={int.name === 'EMR System' ? 'file-text' : int.name === 'CMS HETS' ? 'shield' : int.name === 'Clearinghouse' ? 'server' : 'database'} size={15} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A] pulse-dot" />
+                  <span className="text-[12.5px] font-medium text-gray-900 truncate">{int.name}</span>
+                </div>
+                <div className="text-[10.5px] text-gray-500 mt-0.5">Synced {int.lastSync}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    );
+
+    /* =====================================================
+     *  WORKER DETAIL MODAL
+     * ===================================================== */
+    const WORKER_FEED_NAME = {
+      'w-elig': 'Eligibility Verification',
+      'w-change': 'Insurance Change Detection',
+      'w-triage': 'Exception Triage',
+    };
+    const WORKER_ICON = {
+      'w-elig': 'shield',
+      'w-change': 'activity',
+      'w-triage': 'alert',
+    };
+
+    const ModalMetric = ({ label, value, sub, tone = 'neutral' }) => {
+      const toneFg = { info: '#0F4C81', success: '#16A34A', warning: '#D97706', neutral: '#1F2937' }[tone];
+      return (
+        <div className="border border-[#EAEAEC] rounded-md px-3 py-2.5">
+          <div className="text-[10px] text-gray-500 uppercase tracking-wide font-medium">{label}</div>
+          <div className="text-[20px] font-semibold mt-0.5 leading-tight" style={{ color: toneFg }}>{value}</div>
+          <div className="text-[10.5px] text-gray-500 mt-0.5">{sub}</div>
+        </div>
+      );
+    };
+
+    const WorkerDetailModal = ({ worker, feed, onClose, onToggle, onPause }) => {
+      useEffect(() => {
+        const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+      }, [onClose]);
+
+      if (!worker) return null;
+      const isRunning = worker.status === 'running';
+      const isPaused = worker.status === 'paused';
+      const tone = isRunning ? 'success' : isPaused ? 'warning' : 'neutral';
+      const statusLabel = isRunning ? 'Running' : isPaused ? 'Paused' : 'Idle';
+      const wf = WORKFLOWS[worker.id] || [];
+      const cur = worker.currentStep ?? -1;
+      const filterName = WORKER_FEED_NAME[worker.id];
+      const myFeed = feed.filter(e => e.worker === filterName);
+      const exceptionRate = worker.tasksToday > 0 ? ((worker.exceptionsFlagged / Math.max(1, worker.tasksToday)) * 100) : 0;
+
+      return (
+        <div className="fixed inset-0 z-50 flex items-start justify-center p-6 bg-black/40 fade-in-row" onClick={onClose}>
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-[1100px] max-h-[90vh] flex flex-col overflow-hidden mt-4" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-[#EAEAEC] flex items-start gap-4">
+              <div className="w-10 h-10 rounded-md bg-[#F0F5FB] text-[#0F4C81] flex items-center justify-center shrink-0">
+                <Icon name={WORKER_ICON[worker.id]} size={20} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-[16px] font-semibold text-gray-900 tracking-tight">{worker.name}</h2>
+                  <StatusBadge tone={tone} pulse={isRunning}>{statusLabel}</StatusBadge>
+                </div>
+                <p className="text-[12px] text-gray-500 mt-0.5">{worker.role}</p>
+                <div className="flex items-center gap-1.5 mt-2">
+                  <span className="text-[10.5px] text-gray-500 uppercase tracking-wide font-medium mr-1">Connections</span>
+                  {worker.connections.map(c => (
+                    <span key={c} className="text-[10.5px] px-1.5 py-0.5 rounded bg-[#F3F4F6] text-gray-700 font-medium">{c}</span>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {(isRunning || isPaused) && (
+                  <button onClick={() => onPause(worker.id)} className="h-8 px-2.5 text-[12px] font-medium rounded inline-flex items-center gap-1.5 bg-[#FEF3C7] text-[#92400E] hover:bg-[#FDE68A]">
+                    <Icon name={isPaused ? 'play' : 'pause'} size={12} strokeWidth={2.25} />
+                    {isPaused ? 'Resume' : 'Pause'}
+                  </button>
+                )}
+                <button
+                  onClick={() => onToggle(worker.id)}
+                  className={`h-8 px-3 text-[12px] font-semibold rounded inline-flex items-center gap-1.5 ${isRunning || isPaused ? 'bg-[#A4262C] text-white hover:bg-[#8B1F25]' : 'bg-brand-navy text-white hover-brand-navy'}`}
+                >
+                  <Icon name={isRunning || isPaused ? 'stop' : 'play'} size={12} strokeWidth={2.25} />
+                  {isRunning || isPaused ? 'Stop' : 'Start'}
+                </button>
+                <button onClick={onClose} className="w-8 h-8 rounded hover:bg-gray-100 flex items-center justify-center text-gray-500 ml-1" title="Close">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Last 24h metrics */}
+            <div className="px-6 py-4 border-b border-[#F0F1F3] grid grid-cols-2 md:grid-cols-4 gap-3">
+              <ModalMetric label="Tasks today" value={<AnimatedNumber value={worker.tasksToday} />} sub="rolling 24 hours" />
+              <ModalMetric label="Avg duration" value={`${worker.avgDurationSec}s`} sub="per task" />
+              <ModalMetric label="Success rate" value={`${worker.successRate}%`} sub="last 30 days" tone="success" />
+              <ModalMetric
+                label={worker.id === 'w-triage' ? 'Cases routed' : 'Exception rate'}
+                value={worker.id === 'w-triage' ? <AnimatedNumber value={worker.tasksToday} /> : `${exceptionRate.toFixed(1)}%`}
+                sub={worker.id === 'w-triage' ? 'today' : 'flagged of total'}
+                tone={worker.id === 'w-triage' ? 'info' : 'warning'}
+              />
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-0 overflow-hidden">
+              {/* Live activity stream */}
+              <div className="border-r border-[#F0F1F3] flex flex-col min-h-0">
+                <div className="px-5 py-3 border-b border-[#F0F1F3] flex items-center justify-between">
+                  <div>
+                    <div className="text-[12px] font-semibold text-gray-900">Live Activity Stream</div>
+                    <div className="text-[11px] text-gray-500">Every action this worker takes, in real time.</div>
+                  </div>
+                  <StatusBadge tone={isRunning ? 'success' : 'neutral'} pulse={isRunning}>{isRunning ? 'streaming' : 'paused'}</StatusBadge>
+                </div>
+                <div className="flex-1 overflow-auto">
+                  {myFeed.length === 0 ? (
+                    <div className="p-8 text-center text-[12px] text-gray-500">{isRunning ? 'Waiting for first action.' : 'No recent activity. Start the worker to see actions stream.'}</div>
+                  ) : (
+                    <ul className="divide-y divide-[#F0F1F3]">
+                      {myFeed.map(e => (
+                        <li key={e._id} className="px-5 py-2.5 fade-in-row text-[12px] hover:bg-[#FAFAFA]">
+                          <div className="flex items-start gap-3">
+                            <span className="font-mono text-[11px] text-gray-500 shrink-0 mt-0.5 w-[60px]">{e.ts}</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono text-[11.5px] text-[#0F4C81] font-medium">{e.patientId}</span>
+                                <span className="text-gray-300">·</span>
+                                <span className="text-gray-500 font-mono text-[11px]">{e.durationMs}ms</span>
+                              </div>
+                              <div className="text-gray-700 mt-0.5">{e.action}</div>
+                            </div>
+                            <div className="shrink-0"><ResultPill result={e.result} /></div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+
+              {/* Workflow visualization */}
+              <div className="flex flex-col min-h-0">
+                <div className="px-5 py-3 border-b border-[#F0F1F3]">
+                  <div className="text-[12px] font-semibold text-gray-900">Workflow Visualization</div>
+                  <div className="text-[11px] text-gray-500">Process steps. Active step pulses while running.</div>
+                </div>
+                <div className="flex-1 overflow-auto p-5">
+                  <div className="relative">
+                    {wf.map((step, i) => {
+                      const isActive = isRunning && cur === i;
+                      const isComplete = isRunning && cur > i;
+                      return (
+                        <div key={i} className="flex items-start gap-3 pb-5 relative last:pb-0">
+                          {i < wf.length - 1 && (
+                            <span className="absolute left-[15px] top-8 bottom-0 w-px" style={{ background: isComplete ? 'rgba(22,163,74,0.4)' : '#E5E7EB' }} />
+                          )}
+                          <div className={`relative w-[30px] h-[30px] rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0 ${
+                            isActive ? 'bg-[#DCFCE7] text-[#166534] ring-2 ring-[#16A34A]' :
+                            isComplete ? 'bg-[#DCFCE7] text-[#166534]' :
+                            'bg-[#F3F4F6] text-gray-500'
+                          }`}>
+                            {isActive && <span className="absolute inset-0 rounded-full pulse-ring" style={{ background: '#16A34A' }} />}
+                            <span className="relative">{isComplete ? <Icon name="check" size={14} strokeWidth={2.5} /> : (i + 1)}</span>
+                          </div>
+                          <div className="flex-1 min-w-0 pt-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={`text-[12.5px] font-medium ${isActive ? 'text-[#0F4C81]' : 'text-gray-800'}`}>{step.name}</span>
+                              {isActive && <StatusBadge tone="success" pulse>in progress</StatusBadge>}
+                              {isComplete && <StatusBadge tone="success" dot={false}>complete</StatusBadge>}
+                            </div>
+                            <div className="text-[11.5px] text-gray-500 mt-0.5">{step.desc}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-3 p-3 rounded-md bg-[#F0F5FB] border border-[#DCE7F3]">
+                    <div className="flex items-center gap-2">
+                      <Icon name="zap" size={13} className="text-[#0F4C81]" />
+                      <span className="text-[12px] font-semibold text-[#0F4C81]">Manual baseline comparison</span>
+                    </div>
+                    <div className="text-[11.5px] text-gray-700 mt-1.5">
+                      Manual process averaged ~123 seconds per patient. This worker averages <span className="font-semibold">{worker.avgDurationSec}s</span>, roughly <span className="font-semibold">{Math.round(123 / worker.avgDurationSec)}x faster</span>.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    /* =====================================================
+     *  WORKFORCE PAGE
+     * ===================================================== */
+    const WorkerFullCard = ({ worker, onToggle, onPause, onOpen }) => {
+      const isRunning = worker.status === 'running';
+      const isPaused = worker.status === 'paused';
+      const tone = isRunning ? 'success' : isPaused ? 'warning' : 'neutral';
+      const label = isRunning ? 'Running' : isPaused ? 'Paused' : 'Idle';
+      const wf = WORKFLOWS[worker.id] || [];
+      const cur = worker.currentStep ?? -1;
+      const stop = (fn) => (e) => { e.stopPropagation(); fn(); };
+      return (
+        <div onClick={() => onOpen(worker.id)} className={`relative card card-elev p-5 hover:shadow-md cursor-pointer transition-shadow ${isRunning ? 'border-[#BBF7D0]' : ''}`}>
+          <div className="flex items-start gap-3 mb-3">
+            <div className={`w-10 h-10 rounded-md flex items-center justify-center shrink-0 ${isRunning ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#F0F5FB] text-[#0F4C81]'}`}>
+              <Icon name={WORKER_ICON[worker.id]} size={18} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="text-[14px] font-semibold text-gray-900">{worker.name}</div>
+                <StatusBadge tone={tone} pulse={isRunning}>{label}</StatusBadge>
+              </div>
+              <div className="text-[11.5px] text-gray-500 mt-0.5 line-clamp-2">{worker.role}</div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {worker.connections.map(c => (
+              <span key={c} className="text-[10.5px] px-1.5 py-0.5 rounded bg-[#F3F4F6] text-gray-700 font-medium">{c}</span>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 mb-2">
+            <div className="bg-[#F9FAFB] rounded px-2 py-1.5">
+              <div className="text-[10px] text-gray-500 uppercase tracking-wide">Today</div>
+              <div className="text-[16px] font-semibold text-gray-900 leading-tight"><AnimatedNumber value={worker.tasksToday} /></div>
+            </div>
+            <div className="bg-[#F9FAFB] rounded px-2 py-1.5">
+              <div className="text-[10px] text-gray-500 uppercase tracking-wide">Week</div>
+              <div className="text-[16px] font-semibold text-gray-900 leading-tight"><AnimatedNumber value={worker.tasksWeek} /></div>
+            </div>
+            <div className="bg-[#F9FAFB] rounded px-2 py-1.5">
+              <div className="text-[10px] text-gray-500 uppercase tracking-wide">Month</div>
+              <div className="text-[16px] font-semibold text-gray-900 leading-tight"><AnimatedNumber value={worker.tasksMonth} /></div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <div className="bg-[#F9FAFB] rounded px-2 py-1.5">
+              <div className="text-[10px] text-gray-500 uppercase tracking-wide">Avg duration</div>
+              <div className="text-[14px] font-semibold text-gray-900 leading-tight">{worker.avgDurationSec}s</div>
+            </div>
+            <div className="bg-[#F9FAFB] rounded px-2 py-1.5">
+              <div className="text-[10px] text-gray-500 uppercase tracking-wide">Success rate</div>
+              <div className="text-[14px] font-semibold text-gray-900 leading-tight">{worker.successRate}%</div>
+            </div>
+          </div>
+
+          <div className="mb-3">
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="text-[10px] text-gray-500 uppercase tracking-wide">Current step</div>
+              <div className="text-[10px] text-gray-500">{isRunning && cur >= 0 ? `${cur + 1} of ${wf.length}` : 'idle'}</div>
+            </div>
+            <div className="flex items-center gap-1">
+              {wf.map((s, i) => {
+                const active = isRunning && cur === i;
+                const complete = isRunning && cur > i;
+                return (
+                  <div key={i} className={`flex-1 h-1.5 rounded-full ${active ? 'bg-[#16A34A]' : complete ? 'bg-[#86EFAC]' : 'bg-[#E5E7EB]'}`} style={active ? { animation: 'pulseDot 1.6s ease-in-out infinite' } : undefined} />
+                );
+              })}
+            </div>
+            <div className="text-[11.5px] text-gray-700 mt-1.5 truncate">{isRunning && cur >= 0 ? wf[cur]?.name : worker.currentTask}</div>
+          </div>
+
+          <div className="flex items-center justify-between gap-2 pt-3 border-t border-[#F0F1F3]">
+            <button className="text-[11.5px] text-[#0F4C81] font-medium hover:underline inline-flex items-center gap-1" onClick={stop(() => onOpen(worker.id))}>
+              View details <Icon name="arrow-right" size={11} />
+            </button>
+            <div className="flex items-center gap-1">
+              {(isRunning || isPaused) && (
+                <button onClick={stop(() => onPause(worker.id))} className="h-7 w-7 rounded inline-flex items-center justify-center bg-[#FEF3C7] text-[#92400E] hover:bg-[#FDE68A]" title={isPaused ? 'Resume' : 'Pause'}>
+                  <Icon name={isPaused ? 'play' : 'pause'} size={11} strokeWidth={2.25} />
+                </button>
+              )}
+              <button
+                onClick={stop(() => onToggle(worker.id))}
+                className={`h-7 px-3 text-[11.5px] font-medium rounded inline-flex items-center gap-1 ${isRunning || isPaused ? 'bg-[#FEE2E2] text-[#991B1B] hover:bg-[#FECACA]' : 'bg-brand-navy text-white hover-brand-navy'}`}
+              >
+                <Icon name={isRunning || isPaused ? 'stop' : 'play'} size={11} strokeWidth={2.25} />
+                {isRunning || isPaused ? 'Stop' : 'Start'}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const FutureWorkerCard = ({ w }) => (
+      <div className="card p-5 border-dashed" style={{ opacity: 0.78 }}>
+        <div className="flex items-start gap-3 mb-3">
+          <div className="w-10 h-10 rounded-md bg-[#F3F4F6] text-gray-400 flex items-center justify-center shrink-0">
+            <Icon name={w.icon} size={18} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="text-[14px] font-semibold text-gray-700">{w.name}</div>
+              <StatusBadge tone="info" dot={false}>Phase 2 expansion</StatusBadge>
+            </div>
+            <div className="text-[11.5px] text-gray-500 mt-1">{w.summary}</div>
+          </div>
+        </div>
+        <div className="flex items-center justify-between pt-3 border-t border-dashed border-[#E5E7EB]">
+          <span className="text-[11px] text-gray-500">Available in expansion phase</span>
+          <button disabled className="h-7 px-3 text-[11.5px] font-medium rounded bg-[#F3F4F6] text-gray-400 inline-flex items-center gap-1 cursor-not-allowed">
+            <Icon name="lock" size={11} /> Locked
+          </button>
+        </div>
+      </div>
+    );
+
+    const WorkforcePage = ({ sim, onOpenWorker }) => {
+      const runningCount = sim.workers.filter(w => w.status === 'running').length;
+      return (
+        <div className="px-6 py-5 max-w-[1600px] mx-auto space-y-6">
+          <div className="flex items-end justify-between flex-wrap gap-3">
+            <div>
+              <div className="text-[11px] uppercase tracking-[0.12em] text-gray-500 font-medium">Workforce</div>
+              <h1 className="text-[22px] font-semibold text-gray-900 tracking-tight mt-1">Autonomous Workers</h1>
+              <p className="text-[12.5px] text-gray-500 mt-1">Three workers deployed for Complete OK. Click any worker to drill into their workflow.</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 text-[12px] text-gray-600">
+                <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#16A34A]" /> {runningCount} running</span>
+                <span className="text-gray-300">|</span>
+                <span>3 deployed</span>
+              </div>
+              <button onClick={sim.toggleAll} className={`h-9 px-4 text-[13px] font-semibold rounded-md inline-flex items-center gap-2 shadow-sm focus-ring ${sim.anyRunning ? 'bg-[#A4262C] text-white hover:bg-[#8B1F25]' : 'bg-brand-navy text-white hover-brand-navy'}`}>
+                <Icon name={sim.anyRunning ? 'stop' : 'play'} size={13} strokeWidth={2.25} />
+                {sim.anyRunning ? 'Stop All Workers' : 'Start All Workers'}
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {sim.workers.map(w => (
+              <WorkerFullCard key={w.id} worker={w} onToggle={sim.toggleWorker} onPause={sim.pauseWorker} onOpen={onOpenWorker} />
+            ))}
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-3 pt-2">
+              <div>
+                <h2 className="text-[14px] font-semibold text-gray-900">Expansion Roadmap</h2>
+                <p className="text-[11.5px] text-gray-500 mt-0.5">Additional digital workers available for deployment in subsequent phases.</p>
+              </div>
+              <StatusBadge tone="info" dot={false}>Available in Phase 2</StatusBadge>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {FUTURE_WORKERS.map(w => <FutureWorkerCard key={w.name} w={w} />)}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    /* =====================================================
+     *  DASHBOARD PAGE
+     * ===================================================== */
+    const Dashboard = ({ sim, onOpenWorker, onOpenPatient, onNavigatePatients }) => {
+      const runningCount = sim.workers.filter(w => w.status === 'running').length;
+      return (
+        <div className="px-6 py-5 space-y-5 max-w-[1600px] mx-auto">
+          <div className="flex items-end justify-between">
+            <div>
+              <div className="text-[11px] uppercase tracking-[0.12em] text-gray-500 font-medium">Executive Dashboard</div>
+              <h1 className="text-[22px] font-semibold text-gray-900 tracking-tight mt-1">Operations Overview</h1>
+              <p className="text-[12.5px] text-gray-500 mt-1">Live view of autonomous worker activity, exceptions, and operational impact.</p>
+            </div>
+            <div className="flex items-center gap-2 text-[11.5px] text-gray-500">
+              <Icon name="clock" size={13} />
+              <span>Tuesday, April 28, 2026 · {sim.stats.lastActivityHM} CDT</span>
+            </div>
+          </div>
+
+          <KPIStrip stats={sim.stats} workers={sim.workers} exceptions={sim.exceptions} anyRunning={sim.anyRunning} />
+
+          <MasterControlBar
+            anyRunning={sim.anyRunning}
+            onToggle={sim.toggleAll}
+            lastActivityHM={sim.stats.lastActivityHM}
+            runningCount={runningCount}
+            liveLastMinute={sim.stats.liveLastMinute}
+          />
+
+          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-5">
+            <div className="space-y-5 min-w-0">
+              <ActivityFeed entries={sim.feed} anyRunning={sim.anyRunning} />
+              <ThroughputChart data={sim.throughput} anyRunning={sim.anyRunning} />
+            </div>
+
+            <div className="space-y-5">
+              <WorkforcePanel workers={sim.workers} onToggleWorker={sim.toggleWorker} onPauseWorker={sim.pauseWorker} onOpenWorker={onOpenWorker} />
+              <ExceptionsPanel items={sim.exceptions} onOpenPatient={onOpenPatient} onViewAll={onNavigatePatients} />
+            </div>
+          </div>
+
+          <IntegrationStatusWidget integrations={sim.integrations} />
+        </div>
+      );
+    };
+
+    /* =====================================================
+     *  PAGE SHELLS (filled in subsequent phases)
+     * ===================================================== */
+    const PageShell = ({ kicker, title, description, phase }) => (
+      <div className="px-6 py-5 max-w-[1600px] mx-auto">
+        <div className="flex items-end justify-between mb-5">
+          <div>
+            <div className="text-[11px] uppercase tracking-[0.12em] text-gray-500 font-medium">{kicker}</div>
+            <h1 className="text-[22px] font-semibold text-gray-900 tracking-tight mt-1">{title}</h1>
+            <p className="text-[12.5px] text-gray-500 mt-1">{description}</p>
+          </div>
+        </div>
+        <div className="card card-elev p-12 flex flex-col items-center justify-center text-center min-h-[360px]">
+          <div className="w-12 h-12 rounded-full bg-[#F0F5FB] text-[#0F4C81] flex items-center justify-center mb-4">
+            <Icon name="circle-dot" size={20} />
+          </div>
+          <div className="text-[15px] font-semibold text-gray-900 max-w-md">This view comes online in {phase}.</div>
+          <p className="text-[12.5px] text-gray-500 max-w-md mt-2">Dashboard and Workforce are now fully live. The patient operations table and the analytics page land in subsequent phases of this rapid prototype.</p>
+        </div>
+      </div>
+    );
+
+    /* =====================================================
+     *  ANALYTICS PAGE
+     * ===================================================== */
+    const LABOR_RATE_PER_HOUR = 32; // industry-standard verification specialist rate
+
+    const ANALYTICS_DATA = (() => {
+      // Deterministic shape per session (no random, so the comparison numbers stay stable).
+      const today = new Date();
+      const fmtDay = (d) => `${d.getMonth() + 1}/${d.getDate()}`;
+
+      // 30-day patients processed: pre-deploy manual (~25/day weekday, low weekend),
+      // post-deploy autonomous (~75/day weekday, ramps up).
+      const patients30d = [];
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+        const dow = d.getDay();
+        const isWeekend = dow === 0 || dow === 6;
+        const daysAgo = i;
+        // Deployment day: 14 days ago. Ramp from day 16 to day 12.
+        const isPostDeploy = daysAgo <= 14;
+        const inRamp = daysAgo > 11 && daysAgo <= 14;
+        let base;
+        if (!isPostDeploy) base = 24;
+        else if (inRamp) base = 24 + (15 - daysAgo) * 13;
+        else base = 78;
+        const v = isWeekend ? base * 0.32 : base + Math.sin(daysAgo * 0.7) * 6;
+        const m = isPostDeploy && !isWeekend ? Math.round(v * 0.32) : (isWeekend ? Math.round(base * 0.18) : Math.round(v));
+        const a = isPostDeploy ? Math.round(v) - m : 0;
+        patients30d.push({ date: fmtDay(d), autonomous: Math.max(0, a), manual: Math.max(0, m) });
+      }
+
+      // Worker utilization, last 7 days. Weekend dips, weekday highs.
+      const utilization = [];
+      const dowLabels = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+        const dow = d.getDay();
+        const isWeekend = dow === 0 || dow === 6;
+        const factor = isWeekend ? 0.25 : 1.0;
+        utilization.push({
+          day: dowLabels[dow],
+          eligibility: +(2.4 * factor + Math.sin(i) * 0.15).toFixed(2),
+          change: +(1.7 * factor + Math.sin(i + 1) * 0.12).toFixed(2),
+          triage: +(0.55 * factor + Math.sin(i + 2) * 0.08).toFixed(2),
+        });
+      }
+
+      // Processing time distribution (bucket counts across the last full month).
+      const procTimeDist = [
+        { range: 'under 0.5s', count: 24 },
+        { range: '0.5 to 1.0s', count: 187 },
+        { range: '1.0 to 1.5s', count: 642 },
+        { range: '1.5 to 2.0s', count: 524 },
+        { range: '2.0 to 2.5s', count: 312 },
+        { range: '2.5 to 3.0s', count: 98 },
+        { range: '3.0s+',     count: 41 },
+      ];
+
+      // Backlog reduction trend, last 30 days. Pre-deploy backlog grows, post-deploy collapses.
+      const backlog = [];
+      for (let i = 29; i >= 0; i--) {
+        let val;
+        if (i > 14) val = 1240 + (29 - i) * 12;
+        else if (i > 11) val = 1440 - (15 - i) * 360;
+        else val = Math.max(0, 30 - (12 - i) * 4);
+        val = Math.max(0, Math.round(val + Math.sin(i * 1.3) * 12));
+        backlog.push({ d: 30 - i, backlog: val });
+      }
+
+      // Exception types (counts across the last full month).
+      const exceptionTypes = [
+        { type: 'MA plan change', count: 26 },
+        { type: 'Coverage termination', count: 14 },
+        { type: 'Dual eligibility shift', count: 18 },
+        { type: 'Address change', count: 11 },
+        { type: 'Plan termination', count: 8 },
+        { type: 'Secondary payer change', count: 7 },
+      ];
+
+      return { patients30d, utilization, procTimeDist, backlog, exceptionTypes };
+    })();
+
+    const SectionHeader = ({ kicker, title, description }) => (
+      <div>
+        <div className="text-[10.5px] uppercase tracking-[0.14em] text-[#0F4C81] font-semibold">{kicker}</div>
+        <h2 className="text-[16px] font-semibold text-gray-900 tracking-tight mt-1">{title}</h2>
+        {description && <p className="text-[12px] text-gray-500 mt-0.5">{description}</p>}
+      </div>
+    );
+
+    const StatCard = ({ label, value, sub, tone = 'info', icon }) => {
+      const c = { info: '#0F4C81', success: '#16A34A', warning: '#D97706', neutral: '#6B7280' }[tone];
+      return (
+        <div className="card card-elev p-5">
+          <div className="flex items-start justify-between mb-2">
+            <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">{label}</span>
+            {icon && (
+              <div className="w-7 h-7 rounded flex items-center justify-center" style={{ background: `${c}14`, color: c }}>
+                <Icon name={icon} size={15} />
+              </div>
+            )}
+          </div>
+          <div className="text-[30px] font-semibold text-gray-900 tracking-tight leading-none">{value}</div>
+          <div className="mt-2 text-[11.5px] text-gray-500">{sub}</div>
+        </div>
+      );
+    };
+
+    const ComparisonRow = ({ label, manual, autonomous, highlight }) => (
+      <tr className={`border-t border-[#F0F1F3] ${highlight ? 'bg-[#F0F5FB]' : ''}`}>
+        <td className="px-5 py-3.5 text-[12.5px] font-medium text-gray-900 align-top">{label}</td>
+        <td className="px-5 py-3.5 text-[12.5px] text-gray-700 align-top">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+            <span>{manual}</span>
+          </div>
+        </td>
+        <td className="px-5 py-3.5 text-[12.5px] font-semibold text-[#0F4C81] align-top">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A]" />
+            <span>{autonomous}</span>
+          </div>
+        </td>
+      </tr>
+    );
+
+    const AnalyticsPage = ({ sim }) => {
+      const totalPatientsProcessed = ANALYTICS_DATA.patients30d.reduce((s, d) => s + d.autonomous + d.manual, 0);
+      const totalAutonomous = ANALYTICS_DATA.patients30d.reduce((s, d) => s + d.autonomous, 0);
+      const exceptionsTotal = ANALYTICS_DATA.exceptionTypes.reduce((s, x) => s + x.count, 0);
+      const exceptionRate = ((exceptionsTotal / Math.max(1, totalAutonomous)) * 100).toFixed(1);
+      const laborCostAvoided = sim.stats.hoursSavedMonth * LABOR_RATE_PER_HOUR;
+      const annualCostAvoided = laborCostAvoided * 12;
+      const costPerPatientManual = (LABOR_RATE_PER_HOUR * 72) / 2100;
+      const costPerPatientAuto = (LABOR_RATE_PER_HOUR * 4) / 2100;
+
+      return (
+        <div className="px-6 py-5 max-w-[1600px] mx-auto space-y-7">
+          {/* Page header */}
+          <div className="flex items-end justify-between flex-wrap gap-3">
+            <div>
+              <div className="text-[11px] uppercase tracking-[0.12em] text-gray-500 font-medium">Analytics</div>
+              <h1 className="text-[22px] font-semibold text-gray-900 tracking-tight mt-1">Operational Impact</h1>
+              <p className="text-[12.5px] text-gray-500 mt-1">Performance, financial impact, quality, and the manual versus autonomous comparison.</p>
+            </div>
+            <div className="flex items-center gap-2 text-[11.5px] text-gray-500">
+              <Icon name="clock" size={13} />
+              <span>Reporting window: last 30 days · live</span>
+            </div>
+          </div>
+
+          {/* SECTION 1: Operational Performance */}
+          <div className="space-y-4">
+            <SectionHeader kicker="Section 1" title="Operational Performance" description="Throughput, utilization, and processing-time profile of the autonomous workforce." />
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <Card title="Patients Processed, Last 30 Days" subtitle="Stacked. Autonomous deployment landed 14 days ago." className="lg:col-span-2">
+                <div style={{ width: '100%', height: 260 }}>
+                  <ResponsiveContainer>
+                    <AreaChart data={ANALYTICS_DATA.patients30d} margin={{ top: 6, right: 8, left: -20, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="autoArea" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#0F4C81" stopOpacity={0.32}/>
+                          <stop offset="100%" stopColor="#0F4C81" stopOpacity={0.04}/>
+                        </linearGradient>
+                        <linearGradient id="manualArea" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#9CA3AF" stopOpacity={0.28}/>
+                          <stop offset="100%" stopColor="#9CA3AF" stopOpacity={0.04}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="0" vertical={false} />
+                      <XAxis dataKey="date" interval={4} tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={{ stroke: '#EAEAEC' }} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} />
+                      <Tooltip contentStyle={{ background: '#1F2937', border: 'none', borderRadius: 6, fontSize: 12, padding: '8px 10px' }} labelStyle={{ color: '#9CA3AF', marginBottom: 4, fontSize: 11 }} itemStyle={{ color: '#FFFFFF' }} />
+                      <Area type="monotone" dataKey="manual" stackId="1" name="Manual" stroke="#9CA3AF" strokeWidth={1.5} fill="url(#manualArea)" isAnimationActive={false} />
+                      <Area type="monotone" dataKey="autonomous" stackId="1" name="Autonomous" stroke="#0F4C81" strokeWidth={2} fill="url(#autoArea)" isAnimationActive={false} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="mt-2 flex items-center gap-4 text-[11px] text-gray-600 px-1">
+                  <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#0F4C81]" /> Autonomous</span>
+                  <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#9CA3AF]" /> Manual</span>
+                  <span className="ml-auto text-gray-500">Total processed: <span className="font-semibold text-gray-900">{totalPatientsProcessed.toLocaleString()}</span></span>
+                </div>
+              </Card>
+
+              <Card title="Worker Utilization" subtitle="Active hours per worker, last 7 days.">
+                <div style={{ width: '100%', height: 260 }}>
+                  <ResponsiveContainer>
+                    <AreaChart data={ANALYTICS_DATA.utilization} margin={{ top: 6, right: 8, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="0" vertical={false} />
+                      <XAxis dataKey="day" tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={{ stroke: '#EAEAEC' }} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} />
+                      <Tooltip contentStyle={{ background: '#1F2937', border: 'none', borderRadius: 6, fontSize: 12, padding: '8px 10px' }} labelStyle={{ color: '#9CA3AF', marginBottom: 4, fontSize: 11 }} itemStyle={{ color: '#FFFFFF' }} formatter={(v) => `${v} hr`} />
+                      <Area type="monotone" dataKey="eligibility" stackId="u" name="Eligibility" stroke="#0F4C81" fill="#0F4C81" fillOpacity={0.55} isAnimationActive={false} />
+                      <Area type="monotone" dataKey="change" stackId="u" name="Change Detection" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.45} isAnimationActive={false} />
+                      <Area type="monotone" dataKey="triage" stackId="u" name="Triage" stroke="#93C5FD" fill="#93C5FD" fillOpacity={0.55} isAnimationActive={false} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="mt-2 flex items-center gap-3 text-[11px] text-gray-600 flex-wrap">
+                  <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#0F4C81]" /> Eligibility</span>
+                  <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#3B82F6]" /> Change</span>
+                  <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#93C5FD]" /> Triage</span>
+                </div>
+              </Card>
+            </div>
+
+            <Card title="Processing Time Distribution" subtitle="Per-task duration buckets across the last full month.">
+              <div style={{ width: '100%', height: 220 }}>
+                <ResponsiveContainer>
+                  <BarChart data={ANALYTICS_DATA.procTimeDist} margin={{ top: 6, right: 8, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="0" vertical={false} />
+                    <XAxis dataKey="range" tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={{ stroke: '#EAEAEC' }} tickLine={false} />
+                    <YAxis tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ background: '#1F2937', border: 'none', borderRadius: 6, fontSize: 12, padding: '8px 10px' }} labelStyle={{ color: '#9CA3AF', marginBottom: 4, fontSize: 11 }} itemStyle={{ color: '#FFFFFF' }} formatter={(v) => `${v.toLocaleString()} tasks`} />
+                    <Bar dataKey="count" fill="#0F4C81" radius={[3, 3, 0, 0]} isAnimationActive={false} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+          </div>
+
+          {/* SECTION 2: Financial Impact */}
+          <div className="space-y-4">
+            <SectionHeader kicker="Section 2" title="Financial Impact" description="Hours and dollars saved, plus the operational backlog impact." />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatCard
+                label="Hours Saved This Month"
+                value={<AnimatedNumber value={sim.stats.hoursSavedMonth} format={fmt1} />}
+                sub="vs 72-hour manual baseline · live"
+                tone="success"
+                icon="clock"
+              />
+              <StatCard
+                label="Labor Cost Avoided"
+                value={<><span className="text-[18px] text-gray-500 mr-0.5">$</span><AnimatedNumber value={laborCostAvoided} format={(v) => Math.round(v).toLocaleString()} /></>}
+                sub={`at $${LABOR_RATE_PER_HOUR}/hr verification rate · this month`}
+                tone="info"
+                icon="trending-up"
+              />
+              <StatCard
+                label="Annualized Savings"
+                value={<><span className="text-[18px] text-gray-500 mr-0.5">$</span><AnimatedNumber value={annualCostAvoided} format={(v) => Math.round(v).toLocaleString()} /></>}
+                sub="projected over 12 months"
+                tone="info"
+                icon="trending-up"
+              />
+              <StatCard
+                label="Billing Cycle Acceleration"
+                value="6 days"
+                sub="cut from previous backlog cycle"
+                tone="success"
+                icon="zap"
+              />
+            </div>
+
+            <Card title="Backlog Reduction Trend" subtitle="Patients waiting on verification. Autonomous deployment landed 14 days ago.">
+              <div style={{ width: '100%', height: 240 }}>
+                <ResponsiveContainer>
+                  <AreaChart data={ANALYTICS_DATA.backlog} margin={{ top: 6, right: 8, left: -16, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="backlogFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#DC2626" stopOpacity={0.22}/>
+                        <stop offset="100%" stopColor="#DC2626" stopOpacity={0.02}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="0" vertical={false} />
+                    <XAxis dataKey="d" tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={{ stroke: '#EAEAEC' }} tickLine={false} label={{ value: 'days ago', offset: -4, position: 'insideBottom', fontSize: 10, fill: '#9CA3AF' }} reversed />
+                    <YAxis tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ background: '#1F2937', border: 'none', borderRadius: 6, fontSize: 12, padding: '8px 10px' }} labelStyle={{ color: '#9CA3AF', marginBottom: 4, fontSize: 11 }} itemStyle={{ color: '#FFFFFF' }} formatter={(v) => `${v.toLocaleString()} patients`} />
+                    <Area type="monotone" dataKey="backlog" stroke="#DC2626" strokeWidth={2} fill="url(#backlogFill)" isAnimationActive={false} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="mt-3 flex items-center gap-4 text-[11.5px] text-gray-600 px-1 flex-wrap">
+                <span className="inline-flex items-center gap-1.5"><Icon name="trending-down" size={13} className="text-[#16A34A]" /> Backlog peaked at <span className="font-semibold text-gray-900 mx-1">1,440</span> patients before deployment.</span>
+                <span className="inline-flex items-center gap-1.5"><Icon name="check-circle" size={13} className="text-[#16A34A]" /> Cleared to near-zero within 4 days of go-live.</span>
+              </div>
+            </Card>
+          </div>
+
+          {/* SECTION 3: Quality & Compliance */}
+          <div className="space-y-4">
+            <SectionHeader kicker="Section 3" title="Quality & Compliance" description="Verification accuracy, exception breakdown, and audit completeness." />
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <StatCard
+                label="Verification Accuracy"
+                value={<>{sim.stats.accuracy}<span className="text-[18px] text-gray-500">%</span></>}
+                sub="rolling 30-day measured rate"
+                tone="success"
+                icon="shield"
+              />
+              <StatCard
+                label="Audit Completeness"
+                value={<>100<span className="text-[18px] text-gray-500">%</span></>}
+                sub="every action logged with full context"
+                tone="success"
+                icon="check-circle"
+              />
+              <StatCard
+                label="Exception Rate"
+                value={<>{exceptionRate}<span className="text-[18px] text-gray-500">%</span></>}
+                sub={`${exceptionsTotal} exceptions over ${totalAutonomous.toLocaleString()} verifications`}
+                tone="warning"
+                icon="alert"
+              />
+            </div>
+
+            <Card title="Exceptions by Type" subtitle="Reason categories surfaced by the workforce.">
+              <div style={{ width: '100%', height: 240 }}>
+                <ResponsiveContainer>
+                  <BarChart data={ANALYTICS_DATA.exceptionTypes} layout="vertical" margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="0" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} />
+                    <YAxis dataKey="type" type="category" width={170} tick={{ fontSize: 11, fill: '#374151' }} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ background: '#1F2937', border: 'none', borderRadius: 6, fontSize: 12, padding: '8px 10px' }} labelStyle={{ color: '#9CA3AF', marginBottom: 4, fontSize: 11 }} itemStyle={{ color: '#FFFFFF' }} formatter={(v) => `${v} cases`} />
+                    <Bar dataKey="count" fill="#D97706" radius={[0, 3, 3, 0]} isAnimationActive={false} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+          </div>
+
+          {/* SECTION 4: Manual vs Autonomous Comparison */}
+          <div className="space-y-4">
+            <SectionHeader kicker="Section 4" title="Manual vs Autonomous Comparison" description="Side-by-side, on the same workload of 2,100 patients per cycle." />
+
+            <Card bodyClassName="p-0">
+              <table className="w-full text-[12.5px]">
+                <thead className="bg-[#FAFAFA] border-b border-[#EAEAEC]">
+                  <tr className="text-left text-[10.5px] font-semibold text-gray-500 uppercase tracking-wide">
+                    <th className="px-5 py-3 w-[280px]">Metric</th>
+                    <th className="px-5 py-3 w-[40%]">Manual Process</th>
+                    <th className="px-5 py-3">Autonomous Workforce</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <ComparisonRow label="Time to process 2,100 patients" manual="72 hours (9 staff × 8 hrs)" autonomous="Under 4 hours" highlight />
+                  <ComparisonRow label="Frequency capability" manual="1× monthly" autonomous="2× monthly or higher" />
+                  <ComparisonRow label="Backlog impact" manual="Week-long delay during cycle" autonomous="None" />
+                  <ComparisonRow label="Verification accuracy" manual="Variable (~94%)" autonomous="99.4% measured" />
+                  <ComparisonRow label="Cost per patient verified" manual={`~$${costPerPatientManual.toFixed(2)}`} autonomous={`~$${costPerPatientAuto.toFixed(2)}`} highlight />
+                  <ComparisonRow label="Staff freed for billing work" manual="0" autonomous="9 specialists" />
+                </tbody>
+              </table>
+            </Card>
+
+            {/* Headline callout */}
+            <div className="card card-elev p-6 bg-gradient-to-br from-[#F0F5FB] to-white border-[#DCE7F3]">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-md bg-brand-navy text-white flex items-center justify-center shrink-0">
+                  <Icon name="zap" size={22} strokeWidth={2} />
+                </div>
+                <div className="flex-1">
+                  <div className="text-[11px] uppercase tracking-[0.14em] text-[#0F4C81] font-semibold">Bottom line</div>
+                  <h3 className="text-[20px] font-semibold text-gray-900 tracking-tight mt-1 leading-snug">
+                    Frequency increased from 1× monthly to 2× monthly with zero added headcount.
+                  </h3>
+                  <p className="text-[12.5px] text-gray-600 mt-2 max-w-[820px]">
+                    The autonomous workforce processes the same 2,100 patient panel in under four hours, twice per month, with 99.4% accuracy and a complete audit trail. Nine specialists previously consumed by verification cycles are now free to work billing and denials. Backlog has gone from week-long to none.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    /* =====================================================
+     *  PATIENT OPERATIONS
+     * ===================================================== */
+    const StatusPill = ({ status }) => {
+      if (status === 'verified') return <StatusBadge tone="success">Verified</StatusBadge>;
+      if (status === 'pending') return <StatusBadge tone="info">Pending</StatusBadge>;
+      if (status === 'exception') return <StatusBadge tone="warning">Exception</StatusBadge>;
+      return <StatusBadge tone="neutral">{status}</StatusBadge>;
+    };
+
+    const CoveragePill = ({ coverage }) => {
+      const tone = coverage === 'Medicare' ? 'info' : coverage === 'MA Plan' ? 'success' : 'neutral';
+      return <StatusBadge tone={tone} dot={false}>{coverage}</StatusBadge>;
+    };
+
+    const FilterChip = ({ label, count, active, tone, onClick }) => {
+      const toneFg = { info: '#0F4C81', success: '#166534', warning: '#92400E', neutral: '#374151' }[tone || 'neutral'];
+      const toneBg = { info: '#F0F5FB', success: '#DCFCE7', warning: '#FEF3C7', neutral: '#F3F4F6' }[tone || 'neutral'];
+      return (
+        <button
+          onClick={onClick}
+          className={`h-8 px-3 text-[12px] font-medium rounded-md inline-flex items-center gap-1.5 transition-colors ${active ? 'border border-[#0F4C81] bg-[#F0F5FB] text-[#0F4C81]' : 'border border-[#E5E7EB] bg-white text-gray-700 hover:bg-gray-50'}`}
+        >
+          {label}
+          {count !== undefined && (
+            <span className="px-1.5 py-0.5 rounded-full text-[10.5px] font-semibold" style={{ background: active ? '#DCE7F3' : toneBg, color: active ? '#0F4C81' : toneFg }}>{count}</span>
+          )}
+        </button>
+      );
+    };
+
+    const PATIENTS_PER_PAGE = 50;
+
+    const PatientsPage = ({ sim, onOpenPatient }) => {
+      const [statusFilter, setStatusFilter] = useState('all');
+      const [coverageFilter, setCoverageFilter] = useState('all');
+      const [timeFilter, setTimeFilter] = useState('today'); // today | 24h | 7d | all
+      const [search, setSearch] = useState('');
+      const [page, setPage] = useState(0);
+
+      // Reset page when filters change.
+      useEffect(() => { setPage(0); }, [statusFilter, coverageFilter, timeFilter, search]);
+
+      const filtered = useMemo(() => {
+        const now = Date.now();
+        const since = timeFilter === 'today' ? new Date().setHours(0,0,0,0)
+          : timeFilter === '24h' ? now - 86400000
+          : timeFilter === '7d' ? now - 7 * 86400000
+          : 0;
+        const q = search.trim().toLowerCase();
+        return sim.patients.filter(p => {
+          if (statusFilter !== 'all' && p.status !== statusFilter) return false;
+          if (coverageFilter !== 'all' && p.coverage !== coverageFilter) return false;
+          if (since && p.verifiedAt < since) return false;
+          if (q && !p.id.toLowerCase().includes(q)) return false;
+          return true;
+        });
+      }, [sim.patients, statusFilter, coverageFilter, timeFilter, search]);
+
+      const counts = useMemo(() => {
+        const c = { all: sim.patients.length, verified: 0, pending: 0, exception: 0 };
+        for (const p of sim.patients) c[p.status] = (c[p.status] || 0) + 1;
+        return c;
+      }, [sim.patients]);
+
+      const pageRows = filtered.slice(page * PATIENTS_PER_PAGE, (page + 1) * PATIENTS_PER_PAGE);
+      const totalPages = Math.max(1, Math.ceil(filtered.length / PATIENTS_PER_PAGE));
+
+      return (
+        <div className="px-6 py-5 max-w-[1600px] mx-auto space-y-5">
+          <div className="flex items-end justify-between flex-wrap gap-3">
+            <div>
+              <div className="text-[11px] uppercase tracking-[0.12em] text-gray-500 font-medium">Patient Operations</div>
+              <h1 className="text-[22px] font-semibold text-gray-900 tracking-tight mt-1">Patient Verification Queue</h1>
+              <p className="text-[12.5px] text-gray-500 mt-1">Live table of patients flowing through the workforce. Click any row to drill into the verification history.</p>
+            </div>
+            <div className="flex items-center gap-3 text-[11.5px] text-gray-600">
+              <StatusBadge tone={sim.anyRunning ? 'success' : 'neutral'} pulse={sim.anyRunning}>{sim.anyRunning ? 'live' : 'idle'}</StatusBadge>
+              <span>{filtered.length.toLocaleString()} of {sim.patients.length.toLocaleString()} patients</span>
+            </div>
+          </div>
+
+          {/* Filter bar */}
+          <div className="card card-elev p-4">
+            <div className="flex items-center gap-2 flex-wrap mb-3">
+              <span className="text-[11px] text-gray-500 uppercase tracking-wide font-medium mr-1">Status</span>
+              <FilterChip label="All" count={counts.all} active={statusFilter === 'all'} onClick={() => setStatusFilter('all')} />
+              <FilterChip label="Verified" count={counts.verified} tone="success" active={statusFilter === 'verified'} onClick={() => setStatusFilter('verified')} />
+              <FilterChip label="Pending" count={counts.pending || 0} tone="info" active={statusFilter === 'pending'} onClick={() => setStatusFilter('pending')} />
+              <FilterChip label="Exception" count={counts.exception || 0} tone="warning" active={statusFilter === 'exception'} onClick={() => setStatusFilter('exception')} />
+            </div>
+
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-gray-500 uppercase tracking-wide font-medium">Coverage</span>
+                <select value={coverageFilter} onChange={e => setCoverageFilter(e.target.value)} className="h-8 px-2 text-[12px] bg-white border border-[#E5E7EB] rounded-md focus-ring">
+                  <option value="all">All coverage types</option>
+                  <option value="Medicare">Medicare (Traditional)</option>
+                  <option value="MA Plan">MA Plan</option>
+                  <option value="Dual Eligible">Dual Eligible</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-gray-500 uppercase tracking-wide font-medium">Last verified</span>
+                <select value={timeFilter} onChange={e => setTimeFilter(e.target.value)} className="h-8 px-2 text-[12px] bg-white border border-[#E5E7EB] rounded-md focus-ring">
+                  <option value="today">Today</option>
+                  <option value="24h">Last 24 hours</option>
+                  <option value="7d">Last 7 days</option>
+                  <option value="all">All time</option>
+                </select>
+              </div>
+
+              <div className="ml-auto relative">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400">
+                  <Icon name="search" size={13} />
+                </span>
+                <input
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="Search by Patient ID..."
+                  className="h-8 w-[220px] pl-8 pr-2 text-[12px] bg-white border border-[#E5E7EB] rounded-md focus-ring"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Patient table */}
+          <div className="card card-elev overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-[12px]">
+                <thead className="bg-[#FAFAFA] border-b border-[#EAEAEC]">
+                  <tr className="text-left text-[10.5px] font-semibold text-gray-500 uppercase tracking-wide">
+                    <th className="px-5 py-2.5 w-[120px]">Patient ID</th>
+                    <th className="px-3 py-2.5 w-[140px]">Last Verified</th>
+                    <th className="px-3 py-2.5 w-[120px]">Coverage</th>
+                    <th className="px-3 py-2.5">Insurance Plan</th>
+                    <th className="px-3 py-2.5 w-[200px]">Verification Worker</th>
+                    <th className="px-3 py-2.5 w-[110px]">Status</th>
+                    <th className="px-5 py-2.5 w-[44px]"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pageRows.length === 0 && (
+                    <tr><td colSpan={7} className="px-5 py-12 text-center text-gray-500 text-[12.5px]">No patients match the current filters.</td></tr>
+                  )}
+                  {pageRows.map(p => (
+                    <tr
+                      key={p.id}
+                      onClick={() => onOpenPatient(p.id)}
+                      className={`border-t border-[#F0F1F3] hover:bg-[#F8FAFC] cursor-pointer ${p.newlyAdded ? 'flash-row' : ''}`}
+                    >
+                      <td className="px-5 py-2.5 font-mono text-[12px] text-[#0F4C81] font-medium">{p.id}</td>
+                      <td className="px-3 py-2.5 text-gray-600">{fmtRelative(p.verifiedAt)}</td>
+                      <td className="px-3 py-2.5"><CoveragePill coverage={p.coverage} /></td>
+                      <td className="px-3 py-2.5 text-gray-700 truncate max-w-[280px]" title={p.plan}>{p.plan}</td>
+                      <td className="px-3 py-2.5 text-gray-600">{p.verifiedBy}</td>
+                      <td className="px-3 py-2.5"><StatusPill status={p.status} /></td>
+                      <td className="px-5 py-2.5 text-right text-gray-400"><Icon name="chevron-right" size={14} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            <div className="px-5 py-3 border-t border-[#F0F1F3] flex items-center justify-between text-[11.5px] text-gray-600">
+              <span>Showing {filtered.length === 0 ? 0 : page * PATIENTS_PER_PAGE + 1} to {Math.min(filtered.length, (page + 1) * PATIENTS_PER_PAGE)} of {filtered.length}</span>
+              <div className="flex items-center gap-1">
+                <button disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))} className="h-7 px-2.5 rounded border border-[#E5E7EB] bg-white hover:bg-gray-50 disabled:opacity-50 inline-flex items-center gap-1">
+                  <Icon name="chevron-left" size={12} /> Previous
+                </button>
+                <span className="px-2 text-gray-500">Page {page + 1} of {totalPages}</span>
+                <button disabled={page >= totalPages - 1} onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} className="h-7 px-2.5 rounded border border-[#E5E7EB] bg-white hover:bg-gray-50 disabled:opacity-50 inline-flex items-center gap-1">
+                  Next <Icon name="chevron-right" size={12} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    /* =====================================================
+     *  PATIENT DETAIL MODAL
+     * ===================================================== */
+    const TimelineEntry = ({ entry, last }) => {
+      const r = (entry.result || '').toLowerCase();
+      const tone = r === 'flagged' ? 'warning' : r === 'routed' ? 'info' : r === 'pending' ? 'info' : r === 'note' ? 'neutral' : 'success';
+      const dotColor = tone === 'warning' ? '#D97706' : tone === 'info' ? '#0F4C81' : tone === 'neutral' ? '#6B7280' : '#16A34A';
+      return (
+        <div className="flex items-start gap-3 pb-4 relative last:pb-0">
+          {!last && <span className="absolute left-[7px] top-4 bottom-0 w-px bg-[#E5E7EB]" />}
+          <div className="w-[15px] h-[15px] rounded-full mt-1 shrink-0" style={{ background: dotColor }} />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-mono text-[11px] text-gray-500">{entry.ts}</span>
+              <span className="text-[12px] font-medium text-gray-900">{entry.worker}</span>
+              <ResultPill result={entry.result === 'note' ? 'note' : entry.result} />
+              {entry.durationMs > 0 && <span className="text-[10.5px] text-gray-400 font-mono">{entry.durationMs}ms</span>}
+            </div>
+            <div className="text-[12px] text-gray-700 mt-0.5">{entry.action}</div>
+          </div>
+        </div>
+      );
+    };
+
+    const PatientDetailModal = ({ patient, onClose, onApprove, onReject, onReassign, onAddNote }) => {
+      const [noteDraft, setNoteDraft] = useState('');
+
+      useEffect(() => {
+        const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+      }, [onClose]);
+
+      if (!patient) return null;
+      const isException = patient.status === 'exception';
+      const verifiedTs = fmtClock(patient.verifiedAt);
+      const verifiedFull = new Date(patient.verifiedAt).toLocaleString();
+
+      const submitNote = () => {
+        if (!noteDraft.trim()) return;
+        onAddNote(patient.id, noteDraft);
+        setNoteDraft('');
+      };
+
+      return (
+        <div className="fixed inset-0 z-50 flex items-start justify-center p-6 bg-black/40 fade-in-row" onClick={onClose}>
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-[1100px] max-h-[90vh] flex flex-col overflow-hidden mt-4" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-[#EAEAEC] flex items-start gap-4">
+              <div className="w-10 h-10 rounded-md bg-[#F0F5FB] text-[#0F4C81] flex items-center justify-center shrink-0">
+                <Icon name="user" size={20} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="font-mono text-[18px] font-semibold text-[#0F4C81] tracking-tight">{patient.id}</h2>
+                  <StatusPill status={patient.status} />
+                  <CoveragePill coverage={patient.coverage} />
+                </div>
+                <p className="text-[12px] text-gray-600 mt-1">{patient.plan}</p>
+                <div className="flex items-center gap-4 mt-2 text-[11px] text-gray-500">
+                  <span><span className="text-gray-400">Last verified:</span> <span className="text-gray-700 font-medium">{verifiedFull}</span></span>
+                  <span><span className="text-gray-400">By:</span> <span className="text-gray-700">{patient.verifiedBy}</span></span>
+                </div>
+              </div>
+              <button onClick={onClose} className="w-8 h-8 rounded hover:bg-gray-100 flex items-center justify-center text-gray-500 ml-1" title="Close">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            {/* Exception action bar */}
+            {isException && (
+              <div className="px-6 py-3 border-b border-[#FDE68A] bg-[#FFFBEB] flex items-center gap-3 flex-wrap">
+                <Icon name="alert" size={16} className="text-[#D97706]" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[12.5px] font-semibold text-[#92400E]">Exception flagged. Reviewer action required.</div>
+                  <div className="text-[11.5px] text-gray-700">{patient.exceptionReason} · <UrgencyPill level={patient.urgency} /> · flagged at {patient.flaggedAt}</div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button onClick={() => onApprove(patient.id)} className="h-8 px-3 text-[12px] font-semibold rounded inline-flex items-center gap-1.5 bg-[#16A34A] text-white hover:bg-[#15803D]">
+                    <Icon name="check" size={12} strokeWidth={2.5} /> Approve
+                  </button>
+                  <button onClick={() => onReject(patient.id)} className="h-8 px-3 text-[12px] font-semibold rounded inline-flex items-center gap-1.5 bg-white border border-[#D1D5DB] text-gray-700 hover:bg-gray-50">
+                    Reject
+                  </button>
+                  <button onClick={() => onReassign(patient.id)} className="h-8 px-3 text-[12px] font-semibold rounded inline-flex items-center gap-1.5 bg-white border border-[#D1D5DB] text-gray-700 hover:bg-gray-50">
+                    Reassign
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Body */}
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-0 overflow-hidden">
+              {/* Verification history timeline */}
+              <div className="border-r border-[#F0F1F3] flex flex-col min-h-0">
+                <div className="px-5 py-3 border-b border-[#F0F1F3] flex items-center justify-between">
+                  <div>
+                    <div className="text-[12px] font-semibold text-gray-900">Verification History</div>
+                    <div className="text-[11px] text-gray-500">Every check performed and every result, in order.</div>
+                  </div>
+                  <span className="text-[11px] text-gray-500">{patient.history.length} events</span>
+                </div>
+                <div className="flex-1 overflow-auto p-5">
+                  {patient.history.length === 0 ? (
+                    <div className="text-center py-8 text-[12px] text-gray-500">No verification events recorded yet.</div>
+                  ) : (
+                    <div>
+                      {patient.history.map((h, i) => (
+                        <TimelineEntry key={h.id} entry={h} last={i === patient.history.length - 1} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Coverage history + audit trail + notes */}
+              <div className="flex flex-col min-h-0 overflow-auto">
+                {/* Coverage history */}
+                <div className="px-5 py-3 border-b border-[#F0F1F3]">
+                  <div className="text-[12px] font-semibold text-gray-900">Coverage History</div>
+                  <div className="text-[11px] text-gray-500">Detected changes to insurance state.</div>
+                </div>
+                <div className="px-5 py-3 border-b border-[#F0F1F3]">
+                  {patient.coverageHistory.length === 0 ? (
+                    <div className="text-[11.5px] text-gray-500">No coverage changes detected on this patient.</div>
+                  ) : (
+                    <ul className="space-y-2">
+                      {patient.coverageHistory.map((c, i) => (
+                        <li key={i} className="flex items-start gap-3">
+                          <Icon name="alert" size={14} className="text-[#D97706] mt-0.5 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[12px] font-medium text-gray-900">{c.label}</div>
+                            <div className="text-[11px] text-gray-500 mt-0.5">{c.date} · payer: {c.payer} · <UrgencyPill level={c.urgency} /></div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                {/* Audit summary */}
+                <div className="px-5 py-3 border-b border-[#F0F1F3]">
+                  <div className="text-[12px] font-semibold text-gray-900">Audit Trail</div>
+                  <div className="text-[11px] text-gray-500 mt-0.5">All actions recorded for compliance review.</div>
+                </div>
+                <div className="px-5 py-3 border-b border-[#F0F1F3]">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-[#F9FAFB] rounded px-2.5 py-1.5">
+                      <div className="text-[10px] text-gray-500 uppercase tracking-wide">Events recorded</div>
+                      <div className="text-[14px] font-semibold text-gray-900">{patient.history.length}</div>
+                    </div>
+                    <div className="bg-[#F9FAFB] rounded px-2.5 py-1.5">
+                      <div className="text-[10px] text-gray-500 uppercase tracking-wide">Notes</div>
+                      <div className="text-[14px] font-semibold text-gray-900">{patient.notes.length}</div>
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-center gap-2 text-[11px] text-[#166534]">
+                    <Icon name="check-circle" size={12} />
+                    <span>Audit trail complete and HIPAA compliant.</span>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                <div className="px-5 py-3 border-b border-[#F0F1F3]">
+                  <div className="text-[12px] font-semibold text-gray-900">Reviewer Notes</div>
+                </div>
+                <div className="px-5 py-3 flex-1">
+                  {patient.notes.length > 0 && (
+                    <ul className="space-y-2 mb-3">
+                      {patient.notes.map(n => (
+                        <li key={n.id} className="border border-[#EAEAEC] rounded-md p-2.5">
+                          <div className="text-[12px] text-gray-800">{n.text}</div>
+                          <div className="text-[10.5px] text-gray-500 mt-1">{n.author} · {n.ts}</div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="flex items-stretch gap-2">
+                    <input
+                      value={noteDraft}
+                      onChange={e => setNoteDraft(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') submitNote(); }}
+                      placeholder="Add a note..."
+                      className="flex-1 h-8 px-2.5 text-[12px] bg-white border border-[#E5E7EB] rounded-md focus-ring"
+                    />
+                    <button onClick={submitNote} disabled={!noteDraft.trim()} className="h-8 px-3 text-[12px] font-medium rounded bg-brand-navy text-white hover-brand-navy disabled:opacity-50">
+                      Add note
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    /* =====================================================
+     *  ROOT APP
+     * ===================================================== */
+    const App = () => {
+      const [collapsed, setCollapsed] = useState(false);
+      const [page, setPage] = useState('dashboard');
+      const [viewWorkerId, setViewWorkerId] = useState(null);
+      const [viewPatientId, setViewPatientId] = useState(null);
+      const sim = useSimulation();
+      const openWorker = useCallback((id) => setViewWorkerId(id), []);
+      const closeWorker = useCallback(() => setViewWorkerId(null), []);
+      const openPatient = useCallback((id) => setViewPatientId(id), []);
+      const closePatient = useCallback(() => setViewPatientId(null), []);
+      const viewedWorker = sim.workers.find(w => w.id === viewWorkerId);
+      const viewedPatient = sim.patients.find(p => p.id === viewPatientId);
+
+      return (
+        <div className="h-full flex flex-col">
+          <Header onToggleSidebar={() => setCollapsed(c => !c)} anyRunning={sim.anyRunning} exceptionsCount={sim.exceptions.length} />
+          <div className="flex-1 flex min-h-0">
+            <Sidebar collapsed={collapsed} page={page} onNavigate={setPage} />
+            <main className="flex-1 overflow-auto bg-[#FAFAFA]">
+              {page === 'dashboard' && <Dashboard sim={sim} onOpenWorker={openWorker} onOpenPatient={openPatient} onNavigatePatients={() => setPage('patients')} />}
+              {page === 'workforce' && <WorkforcePage sim={sim} onOpenWorker={openWorker} />}
+              {page === 'patients' && <PatientsPage sim={sim} onOpenPatient={openPatient} />}
+              {page === 'analytics' && <AnalyticsPage sim={sim} />}
+            </main>
+          </div>
+          <Footer />
+          {viewedWorker && (
+            <WorkerDetailModal
+              worker={viewedWorker}
+              feed={sim.feed}
+              onClose={closeWorker}
+              onToggle={sim.toggleWorker}
+              onPause={sim.pauseWorker}
+            />
+          )}
+          {viewedPatient && (
+            <PatientDetailModal
+              patient={viewedPatient}
+              onClose={closePatient}
+              onApprove={sim.approvePatientException}
+              onReject={sim.rejectPatientException}
+              onReassign={sim.reassignPatientException}
+              onAddNote={sim.addPatientNote}
+            />
+          )}
+        </div>
+      );
+    };
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

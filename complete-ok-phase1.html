@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Complete OK Operations Intelligence Platform</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      font-family: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+    }
+    html, body, #root { height: 100%; margin: 0; padding: 0; background: #FAFAFA; color: #1F2937; }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 6px; }
+    ::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
+
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(0.85); }
+    }
+    @keyframes pulseRing {
+      0% { transform: scale(0.9); opacity: 0.55; }
+      100% { transform: scale(2.3); opacity: 0; }
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes flashRow {
+      0% { background-color: rgba(15, 76, 129, 0.08); }
+      100% { background-color: transparent; }
+    }
+    .pulse-dot { animation: pulseDot 1.6s ease-in-out infinite; }
+    .pulse-ring { animation: pulseRing 1.8s ease-out infinite; }
+    .fade-in-up { animation: fadeInUp 0.28s ease-out; }
+    .flash-row { animation: flashRow 1.4s ease-out; }
+
+    .card { background: #FFFFFF; border: 1px solid #EAEAEC; border-radius: 6px; }
+    .card-elev { box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04); }
+
+    .brand-navy { color: #0F4C81; }
+    .bg-brand-navy { background: #0F4C81; }
+    .bg-brand-navy-50 { background: #F0F5FB; }
+    .bg-brand-navy-100 { background: #DCE7F3; }
+    .border-brand-navy { border-color: #0F4C81; }
+    .hover-brand-navy:hover { background: #0D3F6B; }
+
+    .nav-item { transition: background 0.12s ease, color 0.12s ease; }
+    .nav-item:hover { background: #F3F4F6; }
+    .nav-item.active { background: #F0F5FB; color: #0F4C81; }
+    .nav-item.active .nav-bar { background: #0F4C81; }
+
+    button { cursor: pointer; }
+    button:disabled { cursor: not-allowed; opacity: 0.55; }
+
+    .recharts-cartesian-axis-tick-value { font-size: 11px; fill: #6B7280; }
+    .recharts-cartesian-grid line { stroke: #EFF1F4; }
+    .recharts-tooltip-wrapper { outline: none; }
+
+    .focus-ring:focus { outline: 2px solid #0F4C81; outline-offset: 2px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" data-presets="env,react">
+    const { useState, useEffect, useRef, useMemo } = React;
+    const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area } = Recharts;
+
+    /* =====================================================
+     *  ICON SET (inline SVG, Lucide-style)
+     * ===================================================== */
+    const Icon = ({ name, size = 16, strokeWidth = 1.75, className = '' }) => {
+      const p = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth, strokeLinecap: 'round', strokeLinejoin: 'round', className };
+      switch (name) {
+        case 'dashboard': return (<svg {...p}><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>);
+        case 'users': return (<svg {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>);
+        case 'clipboard': return (<svg {...p}><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h4"/></svg>);
+        case 'chart': return (<svg {...p}><line x1="3" y1="3" x2="3" y2="21"/><line x1="3" y1="21" x2="21" y2="21"/><rect x="7" y="13" width="3" height="6"/><rect x="12" y="9" width="3" height="10"/><rect x="17" y="5" width="3" height="14"/></svg>);
+        case 'search': return (<svg {...p}><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>);
+        case 'bell': return (<svg {...p}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>);
+        case 'chevron-down': return (<svg {...p}><polyline points="6 9 12 15 18 9"/></svg>);
+        case 'chevron-left': return (<svg {...p}><polyline points="15 18 9 12 15 6"/></svg>);
+        case 'chevron-right': return (<svg {...p}><polyline points="9 18 15 12 9 6"/></svg>);
+        case 'play': return (<svg {...p}><polygon points="6 4 20 12 6 20 6 4"/></svg>);
+        case 'stop': return (<svg {...p}><rect x="5" y="5" width="14" height="14" rx="1.5"/></svg>);
+        case 'pause': return (<svg {...p}><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>);
+        case 'activity': return (<svg {...p}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>);
+        case 'alert': return (<svg {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>);
+        case 'check': return (<svg {...p}><polyline points="20 6 9 17 4 12"/></svg>);
+        case 'check-circle': return (<svg {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>);
+        case 'clock': return (<svg {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>);
+        case 'database': return (<svg {...p}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>);
+        case 'server': return (<svg {...p}><rect x="2" y="3" width="20" height="8" rx="2"/><rect x="2" y="13" width="20" height="8" rx="2"/><line x1="6" y1="7" x2="6.01" y2="7"/><line x1="6" y1="17" x2="6.01" y2="17"/></svg>);
+        case 'trending-up': return (<svg {...p}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>);
+        case 'trending-down': return (<svg {...p}><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>);
+        case 'user': return (<svg {...p}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>);
+        case 'menu': return (<svg {...p}><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>);
+        case 'settings': return (<svg {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>);
+        case 'help': return (<svg {...p}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>);
+        case 'circle-dot': return (<svg {...p}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>);
+        case 'arrow-right': return (<svg {...p}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>);
+        case 'shield': return (<svg {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>);
+        case 'plug': return (<svg {...p}><path d="M9 2v6"/><path d="M15 2v6"/><path d="M6 8h12v3a6 6 0 0 1-6 6 6 6 0 0 1-6-6V8z"/><path d="M12 17v5"/></svg>);
+        case 'file-text': return (<svg {...p}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>);
+        case 'eye': return (<svg {...p}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>);
+        case 'lock': return (<svg {...p}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>);
+        default: return null;
+      }
+    };
+
+    /* =====================================================
+     *  SAMPLE DATA (Phase 1: static, plausible-idle morning)
+     * ===================================================== */
+    const WORKERS = [
+      {
+        id: 'w-elig',
+        name: 'Patient Eligibility Verification',
+        role: 'Verifies Medicare status and coverage details for all home health patients.',
+        status: 'idle',
+        tasksToday: 312,
+        tasksWeek: 1847,
+        tasksMonth: 1847,
+        avgDurationSec: 1.4,
+        successRate: 99.4,
+        currentTask: 'Idle. Awaiting workforce start.',
+        connections: ['CMS HETS', 'Clearinghouse', 'EMR'],
+      },
+      {
+        id: 'w-change',
+        name: 'Insurance Change Detection',
+        role: 'Identifies primary and secondary payer shifts, plan terminations, and MA plan switches.',
+        status: 'idle',
+        tasksToday: 312,
+        tasksWeek: 1847,
+        tasksMonth: 1847,
+        avgDurationSec: 0.9,
+        successRate: 99.6,
+        currentTask: 'Idle. Awaiting workforce start.',
+        connections: ['EMR', 'Clearinghouse'],
+      },
+      {
+        id: 'w-triage',
+        name: 'Exception Triage',
+        role: 'Routes flagged cases to billing team with context and recommended action.',
+        status: 'idle',
+        tasksToday: 14,
+        tasksWeek: 78,
+        tasksMonth: 78,
+        avgDurationSec: 2.1,
+        successRate: 98.8,
+        currentTask: 'Idle. Awaiting workforce start.',
+        connections: ['EMR', 'Billing System'],
+      },
+    ];
+
+    const FUTURE_WORKERS = [
+      { name: 'Authorization & Recertification', summary: 'Tracks authorization windows and triggers timely recerts.' },
+      { name: 'Billing Operations', summary: 'Prepares clean claims and submits to clearinghouse.' },
+      { name: 'Denials & AR Follow-up', summary: 'Works denials and chases aged receivables.' },
+    ];
+
+    const ACTIVITY_FEED = [
+      { ts: '09:42:18', worker: 'Eligibility Verification', patientId: 'PT-001847', action: 'Eligibility confirmed. Updated patient record.', result: 'verified', durationMs: 1240 },
+      { ts: '09:42:15', worker: 'Insurance Change Detection', patientId: 'PT-001846', action: 'Cross-referenced payer information with current record.', result: 'no change', durationMs: 680 },
+      { ts: '09:42:12', worker: 'Eligibility Verification', patientId: 'PT-001846', action: 'Querying CMS HETS for Medicare Part A and Part B status.', result: 'verified', durationMs: 1480 },
+      { ts: '09:42:09', worker: 'Insurance Change Detection', patientId: 'PT-001845', action: 'Detected MA plan enrollment change. Flagging for review.', result: 'flagged', durationMs: 920 },
+      { ts: '09:42:06', worker: 'Eligibility Verification', patientId: 'PT-001845', action: 'Eligibility confirmed. Updated patient record.', result: 'verified', durationMs: 1100 },
+      { ts: '09:42:02', worker: 'Exception Triage', patientId: 'PT-001823', action: 'Routed to billing team. Recommended action attached.', result: 'routed', durationMs: 1840 },
+      { ts: '09:41:58', worker: 'Eligibility Verification', patientId: 'PT-001844', action: 'No changes detected. Marking patient verified.', result: 'verified', durationMs: 760 },
+      { ts: '09:41:54', worker: 'Eligibility Verification', patientId: 'PT-001843', action: 'Eligibility confirmed. Updated patient record.', result: 'verified', durationMs: 1340 },
+      { ts: '09:41:50', worker: 'Insurance Change Detection', patientId: 'PT-001842', action: 'Cross-referenced payer information.', result: 'no change', durationMs: 720 },
+      { ts: '09:41:46', worker: 'Eligibility Verification', patientId: 'PT-001841', action: 'Querying CMS HETS for Medicare Part A and Part B status.', result: 'verified', durationMs: 1560 },
+      { ts: '09:41:42', worker: 'Eligibility Verification', patientId: 'PT-001840', action: 'Eligibility confirmed.', result: 'verified', durationMs: 1080 },
+      { ts: '09:41:39', worker: 'Insurance Change Detection', patientId: 'PT-001839', action: 'Cross-referenced payer information.', result: 'no change', durationMs: 690 },
+    ];
+
+    const EXCEPTIONS = [
+      { patientId: 'PT-001823', reason: 'MA plan enrollment change detected', urgency: 'high', flaggedAt: '09:38' },
+      { patientId: 'PT-001789', reason: 'Coverage terminated by payer', urgency: 'high', flaggedAt: '09:21' },
+      { patientId: 'PT-001767', reason: 'Dual eligibility shift', urgency: 'medium', flaggedAt: '08:54' },
+      { patientId: 'PT-001745', reason: 'Address change affects service area', urgency: 'medium', flaggedAt: '08:32' },
+      { patientId: 'PT-001712', reason: 'Plan termination pending', urgency: 'low', flaggedAt: '08:14' },
+    ];
+
+    const INTEGRATIONS = [
+      { name: 'EMR System', status: 'connected', lastSync: '2 min ago' },
+      { name: 'CMS HETS', status: 'connected', lastSync: '1 min ago' },
+      { name: 'Clearinghouse', status: 'connected', lastSync: '3 min ago' },
+      { name: 'Billing System', status: 'connected', lastSync: '5 min ago' },
+    ];
+
+    // 24-hour throughput series. Autonomous runs early through evening, manual baseline only during business hours.
+    const THROUGHPUT_DATA = (() => {
+      const out = [];
+      for (let h = 0; h < 24; h++) {
+        const label = `${String(h).padStart(2, '0')}:00`;
+        const inAuto = h >= 6 && h <= 22;
+        const inManual = h >= 8 && h <= 17;
+        // Smoothly varying autonomous throughput; manual is flat during business hours when we ran historically.
+        const auto = inAuto ? Math.max(0, Math.round(46 + 22 * Math.sin((h - 6) / 2.7) + (h === 9 ? 14 : 0))) : 0;
+        const manual = inManual ? Math.round(14 + 4 * Math.sin((h - 8) / 1.8)) : 0;
+        out.push({ hour: label, autonomous: auto, manual });
+      }
+      return out;
+    })();
+
+    /* =====================================================
+     *  SHARED PRIMITIVES
+     * ===================================================== */
+    const StatusBadge = ({ tone = 'neutral', dot = true, children }) => {
+      const map = {
+        success: { bg: '#DCFCE7', fg: '#166534', dot: '#16A34A' },
+        warning: { bg: '#FEF3C7', fg: '#92400E', dot: '#D97706' },
+        error:   { bg: '#FEE2E2', fg: '#991B1B', dot: '#DC2626' },
+        info:    { bg: '#DCE7F3', fg: '#0F4C81', dot: '#0F4C81' },
+        neutral: { bg: '#F3F4F6', fg: '#4B5563', dot: '#6B7280' },
+      };
+      const c = map[tone] || map.neutral;
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium" style={{ background: c.bg, color: c.fg }}>
+          {dot && <span className="w-1.5 h-1.5 rounded-full" style={{ background: c.dot }} />}
+          {children}
+        </span>
+      );
+    };
+
+    const Card = ({ title, subtitle, action, children, className = '', bodyClassName = 'p-5' }) => (
+      <div className={`card card-elev ${className}`}>
+        {(title || action) && (
+          <div className="flex items-start justify-between px-5 pt-4 pb-3 border-b border-[#F0F1F3]">
+            <div>
+              {title && <h3 className="text-[13px] font-semibold text-gray-900 tracking-tight">{title}</h3>}
+              {subtitle && <p className="text-[11px] text-gray-500 mt-0.5">{subtitle}</p>}
+            </div>
+            {action}
+          </div>
+        )}
+        <div className={bodyClassName}>{children}</div>
+      </div>
+    );
+
+    const ResultPill = ({ result }) => {
+      const r = (result || '').toLowerCase();
+      if (r === 'verified' || r === 'no change') return <StatusBadge tone="success" dot={false}>{result}</StatusBadge>;
+      if (r === 'flagged') return <StatusBadge tone="warning" dot={false}>flagged</StatusBadge>;
+      if (r === 'routed') return <StatusBadge tone="info" dot={false}>routed</StatusBadge>;
+      return <StatusBadge tone="neutral" dot={false}>{result}</StatusBadge>;
+    };
+
+    const UrgencyPill = ({ level }) => {
+      const tone = level === 'high' ? 'error' : level === 'medium' ? 'warning' : 'neutral';
+      return <StatusBadge tone={tone} dot={false}>{level}</StatusBadge>;
+    };
+
+    /* =====================================================
+     *  HEADER
+     * ===================================================== */
+    const Logo = () => (
+      <div className="flex items-center gap-2.5 select-none">
+        <div className="w-8 h-8 rounded-md bg-brand-navy flex items-center justify-center shadow-sm">
+          <span className="text-white font-bold text-[13px] tracking-tight">CO</span>
+        </div>
+        <div className="flex flex-col leading-none">
+          <span className="text-[14px] font-semibold text-gray-900 tracking-tight">Complete OK</span>
+          <span className="text-[9.5px] text-gray-500 mt-0.5 tracking-[0.12em] uppercase">Home Health</span>
+        </div>
+      </div>
+    );
+
+    const Header = ({ onToggleSidebar }) => {
+      return (
+        <header className="h-14 bg-white border-b border-[#EAEAEC] flex items-center px-4 gap-4 shrink-0 z-30">
+          <button onClick={onToggleSidebar} className="w-8 h-8 rounded hover:bg-gray-100 flex items-center justify-center text-gray-600 focus-ring" title="Toggle navigation">
+            <Icon name="menu" size={18} />
+          </button>
+          <Logo />
+          <div className="h-6 w-px bg-[#EAEAEC] mx-1" />
+          <div className="flex items-baseline gap-2">
+            <span className="text-[13px] font-medium text-gray-900">Operations Intelligence Platform</span>
+            <span className="text-[11px] text-gray-400 font-mono">v1.0</span>
+          </div>
+
+          <div className="flex-1 flex justify-center">
+            <div className="relative w-full max-w-[480px]">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <Icon name="search" size={15} />
+              </span>
+              <input
+                type="text"
+                placeholder="Search patients, workers, or activity..."
+                className="w-full h-9 pl-9 pr-3 text-[13px] bg-[#F5F5F7] border border-transparent rounded-md focus:bg-white focus:border-[#D1D5DB] focus:outline-none transition-colors"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#DCFCE7] text-[#166534] text-[11px] font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A] pulse-dot" />
+              All systems healthy
+            </div>
+            <button className="relative w-9 h-9 rounded hover:bg-gray-100 flex items-center justify-center text-gray-600 focus-ring" title="Notifications">
+              <Icon name="bell" size={17} />
+              <span className="absolute top-1.5 right-1.5 min-w-[16px] h-4 px-1 bg-[#DC2626] text-white text-[10px] font-semibold rounded-full flex items-center justify-center leading-none">7</span>
+            </button>
+            <div className="h-6 w-px bg-[#EAEAEC] mx-1" />
+            <button className="flex items-center gap-2 pl-1 pr-2 py-1 rounded hover:bg-gray-100 focus-ring" title="Account">
+              <div className="w-7 h-7 rounded-full bg-brand-navy text-white flex items-center justify-center text-[11px] font-semibold">LE</div>
+              <div className="flex flex-col items-start leading-tight">
+                <span className="text-[12px] font-medium text-gray-900">Lola Edwards</span>
+                <span className="text-[10px] text-gray-500">Billing Operations</span>
+              </div>
+              <Icon name="chevron-down" size={14} className="text-gray-400" />
+            </button>
+          </div>
+        </header>
+      );
+    };
+
+    /* =====================================================
+     *  SIDEBAR
+     * ===================================================== */
+    const NAV = [
+      { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
+      { id: 'workforce', label: 'Workforce', icon: 'users' },
+      { id: 'patients', label: 'Patient Operations', icon: 'clipboard' },
+      { id: 'analytics', label: 'Analytics', icon: 'chart' },
+    ];
+
+    const Sidebar = ({ collapsed, page, onNavigate }) => {
+      const w = collapsed ? 64 : 232;
+      return (
+        <aside
+          className="bg-white border-r border-[#EAEAEC] flex flex-col shrink-0 transition-[width] duration-200 ease-in-out"
+          style={{ width: w }}
+        >
+          <div className="px-3 py-4 flex flex-col gap-1">
+            {NAV.map(item => {
+              const active = page === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => onNavigate(item.id)}
+                  className={`nav-item ${active ? 'active' : 'text-gray-700'} group relative flex items-center gap-3 h-9 rounded-md text-[13px] font-medium ${collapsed ? 'justify-center px-0' : 'px-3'}`}
+                  title={collapsed ? item.label : undefined}
+                >
+                  <span className={`nav-bar absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r ${active ? '' : 'bg-transparent'}`} />
+                  <Icon name={item.icon} size={17} className={active ? 'text-[#0F4C81]' : 'text-gray-500'} />
+                  {!collapsed && <span className="truncate">{item.label}</span>}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-auto px-3 pb-4 border-t border-[#F0F1F3] pt-4 flex flex-col gap-1">
+            <button className={`nav-item text-gray-600 flex items-center gap-3 h-9 rounded-md text-[13px] font-medium ${collapsed ? 'justify-center px-0' : 'px-3'}`} title="Settings">
+              <Icon name="settings" size={17} className="text-gray-500" />
+              {!collapsed && <span>Settings</span>}
+            </button>
+            <button className={`nav-item text-gray-600 flex items-center gap-3 h-9 rounded-md text-[13px] font-medium ${collapsed ? 'justify-center px-0' : 'px-3'}`} title="Help">
+              <Icon name="help" size={17} className="text-gray-500" />
+              {!collapsed && <span>Help & support</span>}
+            </button>
+          </div>
+        </aside>
+      );
+    };
+
+    /* =====================================================
+     *  FOOTER
+     * ===================================================== */
+    const Footer = () => (
+      <footer className="h-9 bg-white border-t border-[#EAEAEC] px-5 flex items-center justify-between text-[11px] text-gray-500 shrink-0">
+        <div className="flex items-center gap-4">
+          <span>Powered by Neuralogic</span>
+          <span className="text-gray-300">|</span>
+          <span>Build 1.0.0 (rapid prototype)</span>
+        </div>
+        <div className="flex items-center gap-4">
+          <a className="hover:text-gray-700" href="#">Privacy</a>
+          <a className="hover:text-gray-700" href="#">Terms</a>
+          <a className="hover:text-gray-700" href="#">HIPAA</a>
+          <span className="text-gray-300">|</span>
+          <span>© 2026 Complete OK Home Health</span>
+        </div>
+      </footer>
+    );
+
+    /* =====================================================
+     *  DASHBOARD WIDGETS
+     * ===================================================== */
+    const KPI_DATA = [
+      { id: 'processed', label: 'Patients Processed This Month', value: '1,847', delta: '+312 today', tone: 'info', target: 'of 2,100 target', icon: 'check-circle' },
+      { id: 'hours', label: 'Hours Saved This Month', value: '64.5', delta: 'vs 72 hr manual baseline', tone: 'success', target: '90% reduction', icon: 'clock' },
+      { id: 'workers', label: 'Active Workers', value: '0', delta: '3 idle, ready to start', tone: 'neutral', target: 'of 3 deployed', icon: 'users' },
+      { id: 'exceptions', label: 'Exceptions Pending Review', value: '7', delta: '2 high urgency', tone: 'warning', target: '4.2% rate', icon: 'alert' },
+      { id: 'accuracy', label: 'Eligibility Verification Accuracy', value: '99.4%', delta: '+0.2% vs last month', tone: 'success', target: 'rolling 30-day', icon: 'shield' },
+    ];
+
+    const KPICard = ({ kpi }) => {
+      const toneMap = {
+        info: '#0F4C81',
+        success: '#16A34A',
+        warning: '#D97706',
+        error: '#DC2626',
+        neutral: '#6B7280',
+      };
+      const c = toneMap[kpi.tone];
+      return (
+        <div className="card card-elev p-4 hover:border-[#D1D5DB] transition-colors cursor-pointer">
+          <div className="flex items-start justify-between mb-2.5">
+            <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wide leading-tight pr-2">{kpi.label}</span>
+            <div className="w-7 h-7 rounded flex items-center justify-center" style={{ background: `${c}14`, color: c }}>
+              <Icon name={kpi.icon} size={15} />
+            </div>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-[28px] font-semibold text-gray-900 tracking-tight leading-none">{kpi.value}</span>
+            <span className="text-[11px] text-gray-400">{kpi.target}</span>
+          </div>
+          <div className="mt-2 flex items-center gap-1.5 text-[11.5px]" style={{ color: c }}>
+            <Icon name="trending-up" size={12} strokeWidth={2} />
+            <span className="font-medium">{kpi.delta}</span>
+          </div>
+        </div>
+      );
+    };
+
+    const MasterControlBar = ({ running, onToggle, lastActivity }) => (
+      <div className="card card-elev p-4 flex items-center gap-5">
+        <div className="flex items-center gap-3">
+          <div className="relative w-10 h-10 rounded-full flex items-center justify-center" style={{ background: running ? '#DCFCE7' : '#F3F4F6' }}>
+            {running && <span className="absolute inset-0 rounded-full pulse-ring" style={{ background: '#16A34A' }} />}
+            <span className="w-3 h-3 rounded-full relative" style={{ background: running ? '#16A34A' : '#9CA3AF' }} />
+          </div>
+          <div>
+            <div className="text-[12px] text-gray-500 uppercase tracking-wide font-medium">Workforce Status</div>
+            <div className="text-[15px] font-semibold text-gray-900">{running ? 'Operational. All workers running.' : 'Idle. All workers stopped.'}</div>
+          </div>
+        </div>
+
+        <div className="h-10 w-px bg-[#EAEAEC]" />
+
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[10.5px] text-gray-500 uppercase tracking-wide font-medium">Last activity</span>
+          <span className="text-[13px] text-gray-800 font-medium">{lastActivity}</span>
+        </div>
+
+        <div className="h-10 w-px bg-[#EAEAEC]" />
+
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[10.5px] text-gray-500 uppercase tracking-wide font-medium">Workers online</span>
+          <span className="text-[13px] text-gray-800 font-medium">{running ? '3 of 3' : '0 of 3'}</span>
+        </div>
+
+        <div className="ml-auto flex items-center gap-2">
+          <button className="h-9 px-3 text-[12.5px] font-medium text-gray-700 border border-[#D1D5DB] bg-white hover:bg-gray-50 rounded-md focus-ring inline-flex items-center gap-1.5">
+            <Icon name="settings" size={13} /> Configure
+          </button>
+          <button
+            onClick={onToggle}
+            className={`h-9 px-4 text-[13px] font-semibold rounded-md inline-flex items-center gap-2 focus-ring shadow-sm transition-colors ${running ? 'bg-[#A4262C] text-white hover:bg-[#8B1F25]' : 'bg-brand-navy text-white hover-brand-navy'}`}
+          >
+            <Icon name={running ? 'stop' : 'play'} size={13} strokeWidth={2.25} />
+            {running ? 'Stop All Workers' : 'Start All Workers'}
+          </button>
+        </div>
+      </div>
+    );
+
+    const ActivityFeed = ({ entries, running }) => (
+      <Card
+        title="Live Activity Feed"
+        subtitle={running ? 'Streaming actions from running workers.' : 'Showing the most recent actions before workforce was stopped.'}
+        action={
+          <div className="flex items-center gap-2">
+            <StatusBadge tone={running ? 'success' : 'neutral'}>{running ? 'live' : 'paused'}</StatusBadge>
+            <button className="text-[11.5px] text-[#0F4C81] font-medium hover:underline">Open full log</button>
+          </div>
+        }
+        bodyClassName=""
+      >
+        <div className="max-h-[420px] overflow-auto">
+          <table className="w-full text-[12px]">
+            <thead className="sticky top-0 bg-white">
+              <tr className="text-left text-[10.5px] font-semibold text-gray-500 uppercase tracking-wide">
+                <th className="px-5 py-2.5 w-[78px]">Time</th>
+                <th className="px-2 py-2.5 w-[180px]">Worker</th>
+                <th className="px-2 py-2.5 w-[96px]">Patient</th>
+                <th className="px-2 py-2.5">Action</th>
+                <th className="px-2 py-2.5 w-[92px]">Result</th>
+                <th className="px-5 py-2.5 w-[64px] text-right">ms</th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map((e, i) => (
+                <tr key={i} className="border-t border-[#F0F1F3] hover:bg-[#FAFAFA] fade-in-up">
+                  <td className="px-5 py-2.5 text-gray-500 font-mono text-[11.5px]">{e.ts}</td>
+                  <td className="px-2 py-2.5 text-gray-800">{e.worker}</td>
+                  <td className="px-2 py-2.5 font-mono text-[11.5px] text-[#0F4C81]">{e.patientId}</td>
+                  <td className="px-2 py-2.5 text-gray-700">{e.action}</td>
+                  <td className="px-2 py-2.5"><ResultPill result={e.result} /></td>
+                  <td className="px-5 py-2.5 text-right text-gray-500 font-mono text-[11.5px]">{e.durationMs}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    );
+
+    const WorkerStatusCard = ({ worker, onToggle }) => {
+      const isRunning = worker.status === 'running';
+      const isPaused = worker.status === 'paused';
+      const tone = isRunning ? 'success' : isPaused ? 'warning' : 'neutral';
+      const label = isRunning ? 'Running' : isPaused ? 'Paused' : 'Idle';
+      return (
+        <div className="border border-[#EAEAEC] rounded-md p-3.5 bg-white hover:border-[#D1D5DB] transition-colors">
+          <div className="flex items-start justify-between mb-2">
+            <div className="min-w-0 pr-2">
+              <div className="text-[13px] font-semibold text-gray-900 truncate">{worker.name}</div>
+              <div className="text-[11px] text-gray-500 mt-0.5 line-clamp-2">{worker.role}</div>
+            </div>
+            <StatusBadge tone={tone}>{label}</StatusBadge>
+          </div>
+          <div className="grid grid-cols-3 gap-2 mt-3">
+            <div className="bg-[#F9FAFB] rounded px-2 py-1.5">
+              <div className="text-[10px] text-gray-500 uppercase tracking-wide">Today</div>
+              <div className="text-[14px] font-semibold text-gray-900 leading-tight">{worker.tasksToday.toLocaleString()}</div>
+            </div>
+            <div className="bg-[#F9FAFB] rounded px-2 py-1.5">
+              <div className="text-[10px] text-gray-500 uppercase tracking-wide">Avg time</div>
+              <div className="text-[14px] font-semibold text-gray-900 leading-tight">{worker.avgDurationSec}s</div>
+            </div>
+            <div className="bg-[#F9FAFB] rounded px-2 py-1.5">
+              <div className="text-[10px] text-gray-500 uppercase tracking-wide">Success</div>
+              <div className="text-[14px] font-semibold text-gray-900 leading-tight">{worker.successRate}%</div>
+            </div>
+          </div>
+          <div className="mt-3 flex items-center justify-between">
+            <div className="text-[11px] text-gray-500 truncate pr-3">{worker.currentTask}</div>
+            <button
+              onClick={() => onToggle(worker.id)}
+              className={`shrink-0 h-7 px-2.5 text-[11.5px] font-medium rounded inline-flex items-center gap-1 ${isRunning ? 'bg-[#FEE2E2] text-[#991B1B] hover:bg-[#FECACA]' : 'bg-brand-navy text-white hover-brand-navy'}`}
+            >
+              <Icon name={isRunning ? 'stop' : 'play'} size={11} strokeWidth={2.25} />
+              {isRunning ? 'Stop' : 'Start'}
+            </button>
+          </div>
+        </div>
+      );
+    };
+
+    const WorkforcePanel = ({ workers, onToggleWorker }) => (
+      <Card
+        title="Workforce Status"
+        subtitle="Three autonomous workers deployed for Complete OK."
+        action={<button className="text-[11.5px] text-[#0F4C81] font-medium hover:underline">View all</button>}
+      >
+        <div className="space-y-2.5">
+          {workers.map(w => <WorkerStatusCard key={w.id} worker={w} onToggle={onToggleWorker} />)}
+        </div>
+      </Card>
+    );
+
+    const ExceptionsPanel = ({ items }) => (
+      <Card
+        title="Exceptions Pending Review"
+        subtitle={`${items.length} cases flagged for human review.`}
+        action={<button className="text-[11.5px] text-[#0F4C81] font-medium hover:underline">View all</button>}
+        bodyClassName="p-0"
+      >
+        <ul className="divide-y divide-[#F0F1F3]">
+          {items.map(x => (
+            <li key={x.patientId} className="px-5 py-3 hover:bg-[#FAFAFA] cursor-pointer flex items-center justify-between">
+              <div className="min-w-0 pr-3">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[12px] text-[#0F4C81] font-medium">{x.patientId}</span>
+                  <UrgencyPill level={x.urgency} />
+                </div>
+                <div className="text-[12px] text-gray-700 mt-0.5 truncate">{x.reason}</div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-[11px] text-gray-500 font-mono">{x.flaggedAt}</span>
+                <Icon name="chevron-right" size={14} className="text-gray-400" />
+              </div>
+            </li>
+          ))}
+        </ul>
+      </Card>
+    );
+
+    const ThroughputChart = () => {
+      const todayHours = THROUGHPUT_DATA;
+      return (
+        <Card
+          title="Workflow Throughput, Last 24 Hours"
+          subtitle="Patients processed per hour. Manual baseline shows the cadence of the prior process."
+          action={
+            <div className="flex items-center gap-3 text-[11px] text-gray-600">
+              <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#0F4C81]" /> Autonomous</span>
+              <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: '#D1D5DB' }} /> Manual baseline</span>
+            </div>
+          }
+        >
+          <div style={{ width: '100%', height: 260 }}>
+            <ResponsiveContainer>
+              <AreaChart data={todayHours} margin={{ top: 6, right: 8, left: -16, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="autoFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#0F4C81" stopOpacity={0.18}/>
+                    <stop offset="100%" stopColor="#0F4C81" stopOpacity={0.02}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="0" vertical={false} />
+                <XAxis dataKey="hour" interval={2} tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={{ stroke: '#EAEAEC' }} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ background: '#1F2937', border: 'none', borderRadius: 6, fontSize: 12, padding: '8px 10px' }}
+                  labelStyle={{ color: '#9CA3AF', marginBottom: 4, fontSize: 11 }}
+                  itemStyle={{ color: '#FFFFFF' }}
+                  formatter={(v, n) => [`${v} patients/hr`, n === 'autonomous' ? 'Autonomous' : 'Manual baseline']}
+                />
+                <Area type="monotone" dataKey="manual" stroke="#9CA3AF" strokeWidth={1.5} fill="transparent" strokeDasharray="4 3" dot={false} />
+                <Area type="monotone" dataKey="autonomous" stroke="#0F4C81" strokeWidth={2} fill="url(#autoFill)" dot={false} activeDot={{ r: 4 }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      );
+    };
+
+    const IntegrationStatusWidget = () => (
+      <Card
+        title="Integration Status"
+        subtitle="Live connections to operational systems."
+        action={<button className="text-[11.5px] text-[#0F4C81] font-medium hover:underline">Diagnostics</button>}
+      >
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+          {INTEGRATIONS.map(int => (
+            <div key={int.name} className="border border-[#EAEAEC] rounded-md px-3 py-2.5 flex items-center gap-3">
+              <div className="w-8 h-8 rounded bg-[#F0F5FB] text-[#0F4C81] flex items-center justify-center">
+                <Icon name={int.name === 'EMR System' ? 'file-text' : int.name === 'CMS HETS' ? 'shield' : int.name === 'Clearinghouse' ? 'server' : 'database'} size={15} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A] pulse-dot" />
+                  <span className="text-[12.5px] font-medium text-gray-900 truncate">{int.name}</span>
+                </div>
+                <div className="text-[10.5px] text-gray-500 mt-0.5">Synced {int.lastSync}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    );
+
+    /* =====================================================
+     *  DASHBOARD PAGE
+     * ===================================================== */
+    const Dashboard = () => {
+      // Phase 1: static state. Phase 2 will wire to a live simulation engine.
+      const [running, setRunning] = useState(false);
+      const [workers, setWorkers] = useState(WORKERS);
+
+      const toggleAll = () => {
+        const next = !running;
+        setRunning(next);
+        setWorkers(workers.map(w => ({ ...w, status: next ? 'running' : 'idle', currentTask: next ? 'Initializing run cycle.' : 'Idle. Awaiting workforce start.' })));
+      };
+
+      const toggleOne = (id) => {
+        setWorkers(workers.map(w => w.id === id ? { ...w, status: w.status === 'running' ? 'idle' : 'running', currentTask: w.status === 'running' ? 'Idle. Awaiting workforce start.' : 'Initializing run cycle.' } : w));
+      };
+
+      // Whether any worker is running drives the bar's overall state visually.
+      const anyRunning = workers.some(w => w.status === 'running');
+
+      return (
+        <div className="px-6 py-5 space-y-5 max-w-[1600px] mx-auto">
+          {/* Page heading */}
+          <div className="flex items-end justify-between">
+            <div>
+              <div className="text-[11px] uppercase tracking-[0.12em] text-gray-500 font-medium">Executive Dashboard</div>
+              <h1 className="text-[22px] font-semibold text-gray-900 tracking-tight mt-1">Operations Overview</h1>
+              <p className="text-[12.5px] text-gray-500 mt-1">Live view of autonomous worker activity, exceptions, and operational impact.</p>
+            </div>
+            <div className="flex items-center gap-2 text-[11.5px] text-gray-500">
+              <Icon name="clock" size={13} />
+              <span>Tuesday, April 28, 2026 · 09:42 CDT</span>
+            </div>
+          </div>
+
+          {/* KPI strip */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            {KPI_DATA.map(k => <KPICard key={k.id} kpi={k} />)}
+          </div>
+
+          {/* Master control bar */}
+          <MasterControlBar
+            running={anyRunning}
+            onToggle={toggleAll}
+            lastActivity={anyRunning ? 'Streaming now' : 'Today at 09:42 CDT'}
+          />
+
+          {/* Two-column: feed + side panels */}
+          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-5">
+            <div className="space-y-5 min-w-0">
+              <ActivityFeed entries={ACTIVITY_FEED} running={anyRunning} />
+              <ThroughputChart />
+            </div>
+
+            <div className="space-y-5">
+              <WorkforcePanel workers={workers} onToggleWorker={toggleOne} />
+              <ExceptionsPanel items={EXCEPTIONS} />
+            </div>
+          </div>
+
+          {/* Integration status full-width */}
+          <IntegrationStatusWidget />
+        </div>
+      );
+    };
+
+    /* =====================================================
+     *  PAGE SHELLS (filled in subsequent phases)
+     * ===================================================== */
+    const PageShell = ({ kicker, title, description, phase }) => (
+      <div className="px-6 py-5 max-w-[1600px] mx-auto">
+        <div className="flex items-end justify-between mb-5">
+          <div>
+            <div className="text-[11px] uppercase tracking-[0.12em] text-gray-500 font-medium">{kicker}</div>
+            <h1 className="text-[22px] font-semibold text-gray-900 tracking-tight mt-1">{title}</h1>
+            <p className="text-[12.5px] text-gray-500 mt-1">{description}</p>
+          </div>
+        </div>
+        <div className="card card-elev p-12 flex flex-col items-center justify-center text-center min-h-[360px]">
+          <div className="w-12 h-12 rounded-full bg-[#F0F5FB] text-[#0F4C81] flex items-center justify-center mb-4">
+            <Icon name="circle-dot" size={20} />
+          </div>
+          <div className="text-[15px] font-semibold text-gray-900 max-w-md">This view comes online in {phase}.</div>
+          <p className="text-[12.5px] text-gray-500 max-w-md mt-2">The Dashboard is fully laid out and brand-locked. Functional simulation, deep drill-downs, patient operations table, and analytics will land in subsequent phases of this rapid prototype.</p>
+        </div>
+      </div>
+    );
+
+    const WorkforcePage = () => (
+      <PageShell
+        kicker="Workforce"
+        title="Autonomous Workers"
+        description="Manage the three deployed digital workers and review their performance."
+        phase="Phase 3"
+      />
+    );
+
+    const PatientsPage = () => (
+      <PageShell
+        kicker="Patient Operations"
+        title="Patient Verification Queue"
+        description="Live table of patients flowing through the workforce, filterable by status and coverage."
+        phase="Phase 4"
+      />
+    );
+
+    const AnalyticsPage = () => (
+      <PageShell
+        kicker="Analytics"
+        title="Operational Impact"
+        description="Hours saved, financial impact, quality, and manual versus autonomous comparison."
+        phase="Phase 5"
+      />
+    );
+
+    /* =====================================================
+     *  ROOT APP
+     * ===================================================== */
+    const App = () => {
+      const [collapsed, setCollapsed] = useState(false);
+      const [page, setPage] = useState('dashboard');
+
+      return (
+        <div className="h-full flex flex-col">
+          <Header onToggleSidebar={() => setCollapsed(c => !c)} />
+          <div className="flex-1 flex min-h-0">
+            <Sidebar collapsed={collapsed} page={page} onNavigate={setPage} />
+            <main className="flex-1 overflow-auto bg-[#FAFAFA]">
+              {page === 'dashboard' && <Dashboard />}
+              {page === 'workforce' && <WorkforcePage />}
+              {page === 'patients' && <PatientsPage />}
+              {page === 'analytics' && <AnalyticsPage />}
+            </main>
+          </div>
+          <Footer />
+        </div>
+      );
+    };
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

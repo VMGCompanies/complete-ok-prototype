@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Complete OK Operations Intelligence Platform</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      font-family: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+    }
+    html, body, #root { height: 100%; margin: 0; padding: 0; background: #FAFAFA; color: #1F2937; }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 6px; }
+    ::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
+
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(0.85); }
+    }
+    @keyframes pulseRing {
+      0% { transform: scale(0.9); opacity: 0.55; }
+      100% { transform: scale(2.3); opacity: 0; }
+    }
+    @keyframes fadeInRow {
+      from { opacity: 0; transform: translateY(-2px); background-color: rgba(15, 76, 129, 0.10); }
+      to { opacity: 1; transform: translateY(0); background-color: transparent; }
+    }
+    @keyframes flashRow {
+      0% { background-color: rgba(15, 76, 129, 0.12); }
+      100% { background-color: transparent; }
+    }
+    @keyframes flagPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.45); }
+      50% { box-shadow: 0 0 0 6px rgba(217, 119, 6, 0); }
+    }
+    .pulse-dot { animation: pulseDot 1.6s ease-in-out infinite; }
+    .pulse-ring { animation: pulseRing 1.8s ease-out infinite; }
+    .fade-in-row { animation: fadeInRow 0.5s ease-out; }
+    .flash-row { animation: flashRow 1.4s ease-out; }
+    .flag-pulse { animation: flagPulse 1.6s ease-out 1; }
+
+    .card { background: #FFFFFF; border: 1px solid #EAEAEC; border-radius: 6px; }
+    .card-elev { box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04); }
+
+    .brand-navy { color: #0F4C81; }
+    .bg-brand-navy { background: #0F4C81; }
+    .bg-brand-navy-50 { background: #F0F5FB; }
+    .bg-brand-navy-100 { background: #DCE7F3; }
+    .border-brand-navy { border-color: #0F4C81; }
+    .hover-brand-navy:hover { background: #0D3F6B; }
+
+    .nav-item { transition: background 0.12s ease, color 0.12s ease; }
+    .nav-item:hover { background: #F3F4F6; }
+    .nav-item.active { background: #F0F5FB; color: #0F4C81; }
+    .nav-item.active .nav-bar { background: #0F4C81; }
+
+    button { cursor: pointer; }
+    button:disabled { cursor: not-allowed; opacity: 0.55; }
+
+    .recharts-cartesian-axis-tick-value { font-size: 11px; fill: #6B7280; }
+    .recharts-cartesian-grid line { stroke: #EFF1F4; }
+    .recharts-tooltip-wrapper { outline: none; }
+
+    .focus-ring:focus { outline: 2px solid #0F4C81; outline-offset: 2px; }
+
+    .live-tape {
+      background: linear-gradient(90deg, transparent, rgba(22,163,74,0.08) 30%, rgba(22,163,74,0.08) 70%, transparent);
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" data-presets="env,react">
+    const { useState, useEffect, useRef, useMemo, useCallback } = React;
+    const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area } = Recharts;
+
+    /* =====================================================
+     *  ICON SET (inline SVG, Lucide-style)
+     * ===================================================== */
+    const Icon = ({ name, size = 16, strokeWidth = 1.75, className = '' }) => {
+      const p = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth, strokeLinecap: 'round', strokeLinejoin: 'round', className };
+      switch (name) {
+        case 'dashboard': return (<svg {...p}><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>);
+        case 'users': return (<svg {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>);
+        case 'clipboard': return (<svg {...p}><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h4"/></svg>);
+        case 'chart': return (<svg {...p}><line x1="3" y1="3" x2="3" y2="21"/><line x1="3" y1="21" x2="21" y2="21"/><rect x="7" y="13" width="3" height="6"/><rect x="12" y="9" width="3" height="10"/><rect x="17" y="5" width="3" height="14"/></svg>);
+        case 'search': return (<svg {...p}><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>);
+        case 'bell': return (<svg {...p}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>);
+        case 'chevron-down': return (<svg {...p}><polyline points="6 9 12 15 18 9"/></svg>);
+        case 'chevron-left': return (<svg {...p}><polyline points="15 18 9 12 15 6"/></svg>);
+        case 'chevron-right': return (<svg {...p}><polyline points="9 18 15 12 9 6"/></svg>);
+        case 'play': return (<svg {...p}><polygon points="6 4 20 12 6 20 6 4"/></svg>);
+        case 'stop': return (<svg {...p}><rect x="5" y="5" width="14" height="14" rx="1.5"/></svg>);
+        case 'pause': return (<svg {...p}><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>);
+        case 'activity': return (<svg {...p}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>);
+        case 'alert': return (<svg {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>);
+        case 'check': return (<svg {...p}><polyline points="20 6 9 17 4 12"/></svg>);
+        case 'check-circle': return (<svg {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>);
+        case 'clock': return (<svg {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>);
+        case 'database': return (<svg {...p}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>);
+        case 'server': return (<svg {...p}><rect x="2" y="3" width="20" height="8" rx="2"/><rect x="2" y="13" width="20" height="8" rx="2"/><line x1="6" y1="7" x2="6.01" y2="7"/><line x1="6" y1="17" x2="6.01" y2="17"/></svg>);
+        case 'trending-up': return (<svg {...p}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>);
+        case 'trending-down': return (<svg {...p}><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>);
+        case 'user': return (<svg {...p}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>);
+        case 'menu': return (<svg {...p}><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>);
+        case 'settings': return (<svg {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>);
+        case 'help': return (<svg {...p}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>);
+        case 'circle-dot': return (<svg {...p}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>);
+        case 'arrow-right': return (<svg {...p}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>);
+        case 'shield': return (<svg {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>);
+        case 'plug': return (<svg {...p}><path d="M9 2v6"/><path d="M15 2v6"/><path d="M6 8h12v3a6 6 0 0 1-6 6 6 6 0 0 1-6-6V8z"/><path d="M12 17v5"/></svg>);
+        case 'file-text': return (<svg {...p}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>);
+        case 'eye': return (<svg {...p}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>);
+        case 'lock': return (<svg {...p}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>);
+        case 'zap': return (<svg {...p}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>);
+        default: return null;
+      }
+    };
+
+    /* =====================================================
+     *  HELPERS
+     * ===================================================== */
+    const pad2 = n => String(n).padStart(2, '0');
+    const nowHMS = () => { const d = new Date(); return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`; };
+    const nowHM = () => { const d = new Date(); return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
+    const rand = (min, max) => min + Math.random() * (max - min);
+    const randInt = (min, max) => Math.floor(rand(min, max + 1));
+    const pickWeighted = (arr) => {
+      const total = arr.reduce((s, x) => s + (x.weight || 1), 0);
+      let r = Math.random() * total;
+      for (const x of arr) { r -= (x.weight || 1); if (r <= 0) return x; }
+      return arr[arr.length - 1];
+    };
+    const fmtInt = v => Math.round(v).toLocaleString();
+    const fmt1 = v => (Math.round(v * 10) / 10).toFixed(1);
+
+    /* =====================================================
+     *  STATIC DATA / SEEDS
+     * ===================================================== */
+    const INITIAL_WORKERS = [
+      { id: 'w-elig', name: 'Patient Eligibility Verification', role: 'Verifies Medicare status and coverage details for all home health patients.', status: 'idle', tasksToday: 312, tasksWeek: 1847, tasksMonth: 1847, avgDurationSec: 1.4, successRate: 99.4, currentTask: 'Idle. Awaiting workforce start.', connections: ['CMS HETS', 'Clearinghouse', 'EMR'] },
+      { id: 'w-change', name: 'Insurance Change Detection', role: 'Identifies primary and secondary payer shifts, plan terminations, and MA plan switches.', status: 'idle', tasksToday: 312, tasksWeek: 1847, tasksMonth: 1847, avgDurationSec: 0.9, successRate: 99.6, currentTask: 'Idle. Awaiting workforce start.', connections: ['EMR', 'Clearinghouse'] },
+      { id: 'w-triage', name: 'Exception Triage', role: 'Routes flagged cases to billing team with context and recommended action.', status: 'idle', tasksToday: 14, tasksWeek: 78, tasksMonth: 78, avgDurationSec: 2.1, successRate: 98.8, currentTask: 'Idle. Awaiting workforce start.', connections: ['EMR', 'Billing System'] },
+    ];
+
+    const INITIAL_FEED = [
+      { ts: '09:42:18', worker: 'Eligibility Verification', patientId: 'PT-001847', action: 'Eligibility confirmed. Updated patient record.', result: 'verified', durationMs: 1240 },
+      { ts: '09:42:15', worker: 'Insurance Change Detection', patientId: 'PT-001846', action: 'Cross-referenced payer information. No changes detected.', result: 'no change', durationMs: 680 },
+      { ts: '09:42:12', worker: 'Eligibility Verification', patientId: 'PT-001846', action: 'Querying CMS HETS for Medicare Part A and Part B status.', result: 'verified', durationMs: 1480 },
+      { ts: '09:42:09', worker: 'Insurance Change Detection', patientId: 'PT-001845', action: 'Detected MA plan enrollment change. Flagging for review.', result: 'flagged', durationMs: 920 },
+      { ts: '09:42:06', worker: 'Eligibility Verification', patientId: 'PT-001845', action: 'Eligibility confirmed. Updated patient record.', result: 'verified', durationMs: 1100 },
+      { ts: '09:42:02', worker: 'Exception Triage', patientId: 'PT-001823', action: 'Routed to billing team. Recommended action attached.', result: 'routed', durationMs: 1840 },
+      { ts: '09:41:58', worker: 'Eligibility Verification', patientId: 'PT-001844', action: 'No changes detected. Marking patient verified.', result: 'verified', durationMs: 760 },
+      { ts: '09:41:54', worker: 'Eligibility Verification', patientId: 'PT-001843', action: 'Eligibility confirmed. Updated patient record.', result: 'verified', durationMs: 1340 },
+      { ts: '09:41:50', worker: 'Insurance Change Detection', patientId: 'PT-001842', action: 'Cross-referenced payer information.', result: 'no change', durationMs: 720 },
+      { ts: '09:41:46', worker: 'Eligibility Verification', patientId: 'PT-001841', action: 'Querying CMS HETS for Medicare Part A and Part B status.', result: 'verified', durationMs: 1560 },
+    ].map((e, i) => ({ ...e, _id: `seed-${i}` }));
+
+    const INITIAL_EXCEPTIONS = [
+      { id: 'ex-1', patientId: 'PT-001823', reason: 'MA plan enrollment change detected', urgency: 'high', flaggedAt: '09:38' },
+      { id: 'ex-2', patientId: 'PT-001789', reason: 'Coverage terminated by payer', urgency: 'high', flaggedAt: '09:21' },
+      { id: 'ex-3', patientId: 'PT-001767', reason: 'Dual eligibility shift', urgency: 'medium', flaggedAt: '08:54' },
+      { id: 'ex-4', patientId: 'PT-001745', reason: 'Address change affects service area', urgency: 'medium', flaggedAt: '08:32' },
+      { id: 'ex-5', patientId: 'PT-001712', reason: 'Plan termination pending', urgency: 'low', flaggedAt: '08:14' },
+    ];
+
+    const EXCEPTION_REASONS = [
+      { reason: 'MA plan enrollment change detected', shortAction: 'MA plan enrollment change', urgency: 'high', weight: 3 },
+      { reason: 'Coverage terminated by payer', shortAction: 'coverage termination', urgency: 'high', weight: 2 },
+      { reason: 'Dual eligibility shift', shortAction: 'dual eligibility shift', urgency: 'medium', weight: 3 },
+      { reason: 'Address change affects service area', shortAction: 'address change affecting service area', urgency: 'medium', weight: 2 },
+      { reason: 'Plan termination pending', shortAction: 'plan termination', urgency: 'low', weight: 2 },
+      { reason: 'Secondary payer change', shortAction: 'secondary payer change', urgency: 'medium', weight: 2 },
+    ];
+
+    const INITIAL_INTEGRATIONS = [
+      { name: 'EMR System', status: 'connected', lastSync: '2 min ago' },
+      { name: 'CMS HETS', status: 'connected', lastSync: '1 min ago' },
+      { name: 'Clearinghouse', status: 'connected', lastSync: '3 min ago' },
+      { name: 'Billing System', status: 'connected', lastSync: '5 min ago' },
+    ];
+
+    // 24-hour throughput. Pre-seed past hours; current and future hours start at 0 and accumulate live.
+    const buildSeedThroughput = () => {
+      const out = [];
+      const currentHour = new Date().getHours();
+      for (let h = 0; h < 24; h++) {
+        const label = `${pad2(h)}:00`;
+        const inAuto = h >= 6 && h <= 22;
+        const inManual = h >= 8 && h <= 17;
+        let auto = inAuto ? Math.max(0, Math.round(46 + 22 * Math.sin((h - 6) / 2.7) + (h === 9 ? 14 : 0))) : 0;
+        if (h >= currentHour) auto = 0; // current and future filled live
+        const manual = inManual ? Math.round(14 + 4 * Math.sin((h - 8) / 1.8)) : 0;
+        out.push({ hour: label, autonomous: auto, manual });
+      }
+      return out;
+    };
+
+    /* =====================================================
+     *  SIMULATION ENGINE
+     * ===================================================== */
+    const initialTaskFor = (id) => {
+      switch (id) {
+        case 'w-elig': return 'Pulling next patient batch.';
+        case 'w-change': return 'Watching for payer changes.';
+        case 'w-triage': return 'Awaiting flagged exceptions.';
+        default: return 'Initializing.';
+      }
+    };
+
+    function useSimulation() {
+      const [workers, setWorkers] = useState(INITIAL_WORKERS);
+      const [feed, setFeed] = useState(INITIAL_FEED);
+      const [exceptions, setExceptions] = useState(INITIAL_EXCEPTIONS);
+      const [stats, setStats] = useState({
+        processedToday: 312,
+        processedMonth: 1847,
+        hoursSavedMonth: 64.5,
+        accuracy: 99.4,
+        lastActivityHM: '09:42',
+        liveLastMinute: 0,
+      });
+      const [throughput, setThroughput] = useState(buildSeedThroughput);
+      const [integrations, setIntegrations] = useState(INITIAL_INTEGRATIONS);
+
+      const nextPidRef = useRef(1848);
+      const triageQueueRef = useRef([]);   // exception ids waiting for triage routing
+      const workersRef = useRef(workers);
+      workersRef.current = workers;
+      const feedSeqRef = useRef(0);
+      const lastMinuteBucketRef = useRef([]); // [{ts, count}] last 60s
+
+      const anyRunning = useMemo(() => workers.some(w => w.status === 'running'), [workers]);
+
+      const pushFeed = useCallback((entry) => {
+        feedSeqRef.current += 1;
+        const _id = `f-${feedSeqRef.current}`;
+        setFeed(f => [{ ...entry, _id }, ...f].slice(0, 100));
+      }, []);
+
+      const incCurrentHourThroughput = useCallback(() => {
+        const h = new Date().getHours();
+        const label = `${pad2(h)}:00`;
+        setThroughput(t => t.map(b => b.hour === label ? { ...b, autonomous: b.autonomous + 1 } : b));
+      }, []);
+
+      const recordLiveTick = useCallback(() => {
+        const now = Date.now();
+        lastMinuteBucketRef.current.push(now);
+        // prune
+        lastMinuteBucketRef.current = lastMinuteBucketRef.current.filter(t => now - t < 60000);
+      }, []);
+
+      // Single-tick processor: process one patient through eligibility + change detection,
+      // plus possibly fire a triage routing.
+      const tickOnce = useCallback(() => {
+        const fresh = workersRef.current;
+        const eligOn = fresh.find(w => w.id === 'w-elig')?.status === 'running';
+        const changeOn = fresh.find(w => w.id === 'w-change')?.status === 'running';
+        const triageOn = fresh.find(w => w.id === 'w-triage')?.status === 'running';
+
+        const pidNum = nextPidRef.current;
+        nextPidRef.current = pidNum + 1;
+        const pid = `PT-${String(pidNum).padStart(6, '0')}`;
+        const ts = nowHMS();
+
+        let processedAny = false;
+
+        if (eligOn) {
+          const dur = randInt(900, 1700);
+          // Half the time, show the "querying" line first; other half, jump to confirmed.
+          if (Math.random() < 0.45) {
+            pushFeed({ ts, worker: 'Eligibility Verification', patientId: pid, action: 'Querying CMS HETS for Medicare Part A and Part B status.', result: 'verified', durationMs: dur });
+          } else {
+            pushFeed({ ts, worker: 'Eligibility Verification', patientId: pid, action: 'Eligibility confirmed. Updated patient record.', result: 'verified', durationMs: dur });
+          }
+          setWorkers(ws => ws.map(w => w.id === 'w-elig' ? { ...w, tasksToday: w.tasksToday + 1, tasksWeek: w.tasksWeek + 1, tasksMonth: w.tasksMonth + 1, currentTask: `Verifying ${pid}` } : w));
+          processedAny = true;
+        }
+
+        if (changeOn) {
+          // Slight delay to simulate chained processing.
+          setTimeout(() => {
+            const flagged = Math.random() < 0.04;
+            const ts2 = nowHMS();
+            if (flagged) {
+              const r = pickWeighted(EXCEPTION_REASONS);
+              pushFeed({ ts: ts2, worker: 'Insurance Change Detection', patientId: pid, action: `Detected ${r.shortAction}. Flagging for review.`, result: 'flagged', durationMs: randInt(800, 1200) });
+              const exc = { id: `ex-${Date.now()}-${Math.random().toString(36).slice(2,6)}`, patientId: pid, reason: r.reason, urgency: r.urgency, flaggedAt: nowHM() };
+              setExceptions(ex => [exc, ...ex].slice(0, 50));
+              triageQueueRef.current.push(exc);
+            } else {
+              pushFeed({ ts: ts2, worker: 'Insurance Change Detection', patientId: pid, action: 'Cross-referenced payer information. No changes detected.', result: 'no change', durationMs: randInt(550, 850) });
+            }
+            setWorkers(ws => ws.map(w => w.id === 'w-change' ? { ...w, tasksToday: w.tasksToday + 1, tasksWeek: w.tasksWeek + 1, tasksMonth: w.tasksMonth + 1, currentTask: flagged ? `Flagged ${pid}` : `Checked ${pid}` } : w));
+          }, randInt(180, 360));
+        }
+
+        if (triageOn && triageQueueRef.current.length > 0 && Math.random() < 0.55) {
+          setTimeout(() => {
+            const exc = triageQueueRef.current.shift();
+            if (!exc) return;
+            pushFeed({ ts: nowHMS(), worker: 'Exception Triage', patientId: exc.patientId, action: 'Routed to billing team. Recommended action attached.', result: 'routed', durationMs: randInt(1500, 2200) });
+            setExceptions(ex => ex.filter(e => e.id !== exc.id));
+            setWorkers(ws => ws.map(w => w.id === 'w-triage' ? { ...w, tasksToday: w.tasksToday + 1, tasksWeek: w.tasksWeek + 1, tasksMonth: w.tasksMonth + 1, currentTask: `Routed ${exc.patientId}` } : w));
+          }, randInt(400, 700));
+        }
+
+        if (processedAny) {
+          recordLiveTick();
+          incCurrentHourThroughput();
+          setStats(s => ({
+            ...s,
+            processedToday: s.processedToday + 1,
+            processedMonth: s.processedMonth + 1,
+            hoursSavedMonth: s.hoursSavedMonth + 0.034,
+            lastActivityHM: nowHM(),
+          }));
+        }
+      }, [pushFeed, incCurrentHourThroughput, recordLiveTick]);
+
+      // Main tick loop: schedules itself with natural jitter as long as any worker is running.
+      useEffect(() => {
+        if (!anyRunning) return;
+        let cancelled = false;
+        let timeoutId = null;
+        const loop = () => {
+          if (cancelled) return;
+          tickOnce();
+          const next = randInt(800, 2000);
+          timeoutId = setTimeout(loop, next);
+        };
+        timeoutId = setTimeout(loop, 600);
+        return () => { cancelled = true; if (timeoutId) clearTimeout(timeoutId); };
+      }, [anyRunning, tickOnce]);
+
+      // Update "live last minute" stat once a second.
+      useEffect(() => {
+        const t = setInterval(() => {
+          const now = Date.now();
+          const cnt = lastMinuteBucketRef.current.filter(x => now - x < 60000).length;
+          setStats(s => s.liveLastMinute === cnt ? s : { ...s, liveLastMinute: cnt });
+        }, 1000);
+        return () => clearInterval(t);
+      }, []);
+
+      // Integration pings: refresh "last sync" every 8s.
+      useEffect(() => {
+        const t = setInterval(() => {
+          setIntegrations(prev => prev.map(p => {
+            const seconds = randInt(20, 240);
+            const label = seconds < 60 ? `${seconds} sec ago` : `${Math.round(seconds / 60)} min ago`;
+            return { ...p, lastSync: label };
+          }));
+        }, 8000);
+        return () => clearInterval(t);
+      }, []);
+
+      const startAll = useCallback(() => {
+        setWorkers(ws => ws.map(w => ({ ...w, status: 'running', currentTask: initialTaskFor(w.id) })));
+      }, []);
+      const stopAll = useCallback(() => {
+        setWorkers(ws => ws.map(w => ({ ...w, status: 'idle', currentTask: 'Idle. Awaiting workforce start.' })));
+      }, []);
+      const toggleAll = useCallback(() => {
+        const allIdle = workersRef.current.every(w => w.status === 'idle');
+        if (allIdle) startAll(); else stopAll();
+      }, [startAll, stopAll]);
+      const toggleWorker = useCallback((id) => {
+        setWorkers(ws => ws.map(w => w.id === id
+          ? { ...w, status: w.status === 'idle' ? 'running' : 'idle', currentTask: w.status === 'idle' ? initialTaskFor(id) : 'Idle. Awaiting workforce start.' }
+          : w));
+      }, []);
+      const pauseWorker = useCallback((id) => {
+        setWorkers(ws => ws.map(w => w.id === id
+          ? { ...w, status: w.status === 'paused' ? 'running' : (w.status === 'running' ? 'paused' : w.status), currentTask: w.status === 'paused' ? initialTaskFor(id) : (w.status === 'running' ? 'Paused. Holding state.' : w.currentTask) }
+          : w));
+      }, []);
+
+      // Resolve an exception manually (will be wired to action buttons in Phase 4)
+      const resolveException = useCallback((id) => {
+        setExceptions(ex => ex.filter(e => e.id !== id));
+        triageQueueRef.current = triageQueueRef.current.filter(e => e.id !== id);
+      }, []);
+
+      return {
+        workers, feed, exceptions, stats, throughput, integrations,
+        anyRunning,
+        toggleAll, startAll, stopAll, toggleWorker, pauseWorker, resolveException,
+      };
+    }
+
+    /* =====================================================
+     *  PRIMITIVES
+     * ===================================================== */
+    const StatusBadge = ({ tone = 'neutral', dot = true, children, pulse = false }) => {
+      const map = {
+        success: { bg: '#DCFCE7', fg: '#166534', dot: '#16A34A' },
+        warning: { bg: '#FEF3C7', fg: '#92400E', dot: '#D97706' },
+        error:   { bg: '#FEE2E2', fg: '#991B1B', dot: '#DC2626' },
+        info:    { bg: '#DCE7F3', fg: '#0F4C81', dot: '#0F4C81' },
+        neutral: { bg: '#F3F4F6', fg: '#4B5563', dot: '#6B7280' },
+      };
+      const c = map[tone] || map.neutral;
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium" style={{ background: c.bg, color: c.fg }}>
+          {dot && <span className={`w-1.5 h-1.5 rounded-full ${pulse ? 'pulse-dot' : ''}`} style={{ background: c.dot }} />}
+          {children}
+        </span>
+      );
+    };
+
+    const Card = ({ title, subtitle, action, children, className = '', bodyClassName = 'p-5' }) => (
+      <div className={`card card-elev ${className}`}>
+        {(title || action) && (
+          <div className="flex items-start justify-between px-5 pt-4 pb-3 border-b border-[#F0F1F3]">
+            <div>
+              {title && <h3 className="text-[13px] font-semibold text-gray-900 tracking-tight">{title}</h3>}
+              {subtitle && <p className="text-[11px] text-gray-500 mt-0.5">{subtitle}</p>}
+            </div>
+            {action}
+          </div>
+        )}
+        <div className={bodyClassName}>{children}</div>
+      </div>
+    );
+
+    const ResultPill = ({ result }) => {
+      const r = (result || '').toLowerCase();
+      if (r === 'verified' || r === 'no change') return <StatusBadge tone="success" dot={false}>{result}</StatusBadge>;
+      if (r === 'flagged') return <StatusBadge tone="warning" dot={false}>flagged</StatusBadge>;
+      if (r === 'routed') return <StatusBadge tone="info" dot={false}>routed</StatusBadge>;
+      return <StatusBadge tone="neutral" dot={false}>{result}</StatusBadge>;
+    };
+
+    const UrgencyPill = ({ level }) => {
+      const tone = level === 'high' ? 'error' : level === 'medium' ? 'warning' : 'neutral';
+      return <StatusBadge tone={tone} dot={false}>{level}</StatusBadge>;
+    };
+
+    // AnimatedNumber: smoothly transitions between consecutive values.
+    const AnimatedNumber = ({ value, format = fmtInt, duration = 500 }) => {
+      const [shown, setShown] = useState(value);
+      const fromRef = useRef(value);
+      const toRef = useRef(value);
+      const startRef = useRef(0);
+
+      useEffect(() => {
+        fromRef.current = shown;
+        toRef.current = value;
+        startRef.current = performance.now();
+        let raf;
+        const step = (now) => {
+          const t = Math.min(1, (now - startRef.current) / duration);
+          const eased = 1 - Math.pow(1 - t, 3);
+          const v = fromRef.current + (toRef.current - fromRef.current) * eased;
+          setShown(v);
+          if (t < 1) raf = requestAnimationFrame(step);
+        };
+        raf = requestAnimationFrame(step);
+        return () => cancelAnimationFrame(raf);
+      }, [value]);
+
+      return <span>{format(shown)}</span>;
+    };
+
+    /* =====================================================
+     *  HEADER / SIDEBAR / FOOTER
+     * ===================================================== */
+    const Logo = () => (
+      <div className="flex items-center gap-2.5 select-none">
+        <div className="w-8 h-8 rounded-md bg-brand-navy flex items-center justify-center shadow-sm">
+          <span className="text-white font-bold text-[13px] tracking-tight">CO</span>
+        </div>
+        <div className="flex flex-col leading-none">
+          <span className="text-[14px] font-semibold text-gray-900 tracking-tight">Complete OK</span>
+          <span className="text-[9.5px] text-gray-500 mt-0.5 tracking-[0.12em] uppercase">Home Health</span>
+        </div>
+      </div>
+    );
+
+    const Header = ({ onToggleSidebar, anyRunning, exceptionsCount }) => (
+      <header className="h-14 bg-white border-b border-[#EAEAEC] flex items-center px-4 gap-4 shrink-0 z-30">
+        <button onClick={onToggleSidebar} className="w-8 h-8 rounded hover:bg-gray-100 flex items-center justify-center text-gray-600 focus-ring" title="Toggle navigation">
+          <Icon name="menu" size={18} />
+        </button>
+        <Logo />
+        <div className="h-6 w-px bg-[#EAEAEC] mx-1" />
+        <div className="flex items-baseline gap-2">
+          <span className="text-[13px] font-medium text-gray-900">Operations Intelligence Platform</span>
+          <span className="text-[11px] text-gray-400 font-mono">v1.0</span>
+        </div>
+
+        <div className="flex-1 flex justify-center">
+          <div className="relative w-full max-w-[480px]">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+              <Icon name="search" size={15} />
+            </span>
+            <input
+              type="text"
+              placeholder="Search patients, workers, or activity..."
+              className="w-full h-9 pl-9 pr-3 text-[13px] bg-[#F5F5F7] border border-transparent rounded-md focus:bg-white focus:border-[#D1D5DB] focus:outline-none transition-colors"
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium ${anyRunning ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#F3F4F6] text-[#4B5563]'}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${anyRunning ? 'pulse-dot' : ''}`} style={{ background: anyRunning ? '#16A34A' : '#9CA3AF' }} />
+            {anyRunning ? 'Workforce active' : 'All systems healthy'}
+          </div>
+          <button className="relative w-9 h-9 rounded hover:bg-gray-100 flex items-center justify-center text-gray-600 focus-ring" title="Notifications">
+            <Icon name="bell" size={17} />
+            {exceptionsCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 min-w-[16px] h-4 px-1 bg-[#DC2626] text-white text-[10px] font-semibold rounded-full flex items-center justify-center leading-none">{exceptionsCount}</span>
+            )}
+          </button>
+          <div className="h-6 w-px bg-[#EAEAEC] mx-1" />
+          <button className="flex items-center gap-2 pl-1 pr-2 py-1 rounded hover:bg-gray-100 focus-ring" title="Account">
+            <div className="w-7 h-7 rounded-full bg-brand-navy text-white flex items-center justify-center text-[11px] font-semibold">LE</div>
+            <div className="flex flex-col items-start leading-tight">
+              <span className="text-[12px] font-medium text-gray-900">Lola Edwards</span>
+              <span className="text-[10px] text-gray-500">Billing Operations</span>
+            </div>
+            <Icon name="chevron-down" size={14} className="text-gray-400" />
+          </button>
+        </div>
+      </header>
+    );
+
+    const NAV = [
+      { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
+      { id: 'workforce', label: 'Workforce', icon: 'users' },
+      { id: 'patients', label: 'Patient Operations', icon: 'clipboard' },
+      { id: 'analytics', label: 'Analytics', icon: 'chart' },
+    ];
+
+    const Sidebar = ({ collapsed, page, onNavigate }) => (
+      <aside
+        className="bg-white border-r border-[#EAEAEC] flex flex-col shrink-0 transition-[width] duration-200 ease-in-out"
+        style={{ width: collapsed ? 64 : 232 }}
+      >
+        <div className="px-3 py-4 flex flex-col gap-1">
+          {NAV.map(item => {
+            const active = page === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onNavigate(item.id)}
+                className={`nav-item ${active ? 'active' : 'text-gray-700'} group relative flex items-center gap-3 h-9 rounded-md text-[13px] font-medium ${collapsed ? 'justify-center px-0' : 'px-3'}`}
+                title={collapsed ? item.label : undefined}
+              >
+                <span className={`nav-bar absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r ${active ? '' : 'bg-transparent'}`} />
+                <Icon name={item.icon} size={17} className={active ? 'text-[#0F4C81]' : 'text-gray-500'} />
+                {!collapsed && <span className="truncate">{item.label}</span>}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-auto px-3 pb-4 border-t border-[#F0F1F3] pt-4 flex flex-col gap-1">
+          <button className={`nav-item text-gray-600 flex items-center gap-3 h-9 rounded-md text-[13px] font-medium ${collapsed ? 'justify-center px-0' : 'px-3'}`} title="Settings">
+            <Icon name="settings" size={17} className="text-gray-500" />
+            {!collapsed && <span>Settings</span>}
+          </button>
+          <button className={`nav-item text-gray-600 flex items-center gap-3 h-9 rounded-md text-[13px] font-medium ${collapsed ? 'justify-center px-0' : 'px-3'}`} title="Help">
+            <Icon name="help" size={17} className="text-gray-500" />
+            {!collapsed && <span>Help & support</span>}
+          </button>
+        </div>
+      </aside>
+    );
+
+    const Footer = () => (
+      <footer className="h-9 bg-white border-t border-[#EAEAEC] px-5 flex items-center justify-between text-[11px] text-gray-500 shrink-0">
+        <div className="flex items-center gap-4">
+          <span>Powered by Neuralogic</span>
+          <span className="text-gray-300">|</span>
+          <span>Build 1.0.0 (rapid prototype)</span>
+        </div>
+        <div className="flex items-center gap-4">
+          <a className="hover:text-gray-700" href="#">Privacy</a>
+          <a className="hover:text-gray-700" href="#">Terms</a>
+          <a className="hover:text-gray-700" href="#">HIPAA</a>
+          <span className="text-gray-300">|</span>
+          <span>© 2026 Complete OK Home Health</span>
+        </div>
+      </footer>
+    );
+
+    /* =====================================================
+     *  KPI CARDS (live)
+     * ===================================================== */
+    const KPICard = ({ label, value, sub, icon, tone = 'info' }) => {
+      const toneMap = { info: '#0F4C81', success: '#16A34A', warning: '#D97706', error: '#DC2626', neutral: '#6B7280' };
+      const c = toneMap[tone];
+      return (
+        <div className="card card-elev p-4 hover:border-[#D1D5DB] transition-colors cursor-pointer">
+          <div className="flex items-start justify-between mb-2.5">
+            <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wide leading-tight pr-2">{label}</span>
+            <div className="w-7 h-7 rounded flex items-center justify-center" style={{ background: `${c}14`, color: c }}>
+              <Icon name={icon} size={15} />
+            </div>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-[28px] font-semibold text-gray-900 tracking-tight leading-none">{value}</span>
+          </div>
+          <div className="mt-2 text-[11.5px] text-gray-500 truncate">{sub}</div>
+        </div>
+      );
+    };
+
+    const KPIStrip = ({ stats, workers, exceptions, anyRunning }) => {
+      const activeCount = workers.filter(w => w.status === 'running').length;
+      const pausedCount = workers.filter(w => w.status === 'paused').length;
+      const highUrgent = exceptions.filter(e => e.urgency === 'high').length;
+      return (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          <KPICard
+            label="Patients Processed This Month"
+            value={<AnimatedNumber value={stats.processedMonth} />}
+            sub="of 2,100 monthly target"
+            icon="check-circle"
+            tone="info"
+          />
+          <KPICard
+            label="Hours Saved This Month"
+            value={<AnimatedNumber value={stats.hoursSavedMonth} format={fmt1} />}
+            sub="vs 72-hour manual baseline"
+            icon="clock"
+            tone="success"
+          />
+          <KPICard
+            label="Active Workers"
+            value={<span>{activeCount}{pausedCount ? <span className="text-[14px] text-gray-400 ml-1">({pausedCount} paused)</span> : null}</span>}
+            sub={anyRunning ? `${stats.liveLastMinute} actions in last 60 sec` : '3 idle, ready to start'}
+            icon="users"
+            tone={anyRunning ? 'success' : 'neutral'}
+          />
+          <KPICard
+            label="Exceptions Pending Review"
+            value={<AnimatedNumber value={exceptions.length} />}
+            sub={highUrgent > 0 ? `${highUrgent} high urgency` : 'All low to medium'}
+            icon="alert"
+            tone={highUrgent > 0 ? 'warning' : 'neutral'}
+          />
+          <KPICard
+            label="Eligibility Verification Accuracy"
+            value={`${stats.accuracy}%`}
+            sub="rolling 30-day"
+            icon="shield"
+            tone="success"
+          />
+        </div>
+      );
+    };
+
+    /* =====================================================
+     *  MASTER CONTROL
+     * ===================================================== */
+    const MasterControlBar = ({ anyRunning, onToggle, lastActivityHM, runningCount, liveLastMinute }) => (
+      <div className="card card-elev p-4 flex items-center gap-5">
+        <div className="flex items-center gap-3">
+          <div className="relative w-10 h-10 rounded-full flex items-center justify-center" style={{ background: anyRunning ? '#DCFCE7' : '#F3F4F6' }}>
+            {anyRunning && <span className="absolute inset-0 rounded-full pulse-ring" style={{ background: '#16A34A' }} />}
+            <span className="w-3 h-3 rounded-full relative" style={{ background: anyRunning ? '#16A34A' : '#9CA3AF' }} />
+          </div>
+          <div>
+            <div className="text-[12px] text-gray-500 uppercase tracking-wide font-medium">Workforce Status</div>
+            <div className="text-[15px] font-semibold text-gray-900">{anyRunning ? `Operational. ${runningCount} of 3 workers running.` : 'Idle. All workers stopped.'}</div>
+          </div>
+        </div>
+
+        <div className="h-10 w-px bg-[#EAEAEC]" />
+
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[10.5px] text-gray-500 uppercase tracking-wide font-medium">Last activity</span>
+          <span className="text-[13px] text-gray-800 font-medium">{anyRunning ? 'Streaming now' : `Today at ${lastActivityHM} CDT`}</span>
+        </div>
+
+        <div className="h-10 w-px bg-[#EAEAEC]" />
+
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[10.5px] text-gray-500 uppercase tracking-wide font-medium">Throughput</span>
+          <span className="text-[13px] text-gray-800 font-medium">{anyRunning ? `${liveLastMinute} actions / min` : 'Awaiting start'}</span>
+        </div>
+
+        <div className="ml-auto flex items-center gap-2">
+          <button className="h-9 px-3 text-[12.5px] font-medium text-gray-700 border border-[#D1D5DB] bg-white hover:bg-gray-50 rounded-md focus-ring inline-flex items-center gap-1.5">
+            <Icon name="settings" size={13} /> Configure
+          </button>
+          <button
+            onClick={onToggle}
+            className={`h-9 px-4 text-[13px] font-semibold rounded-md inline-flex items-center gap-2 focus-ring shadow-sm transition-colors ${anyRunning ? 'bg-[#A4262C] text-white hover:bg-[#8B1F25]' : 'bg-brand-navy text-white hover-brand-navy'}`}
+          >
+            <Icon name={anyRunning ? 'stop' : 'play'} size={13} strokeWidth={2.25} />
+            {anyRunning ? 'Stop All Workers' : 'Start All Workers'}
+          </button>
+        </div>
+      </div>
+    );
+
+    /* =====================================================
+     *  ACTIVITY FEED
+     * ===================================================== */
+    const ActivityFeed = ({ entries, anyRunning }) => (
+      <Card
+        title="Live Activity Feed"
+        subtitle={anyRunning ? 'Streaming actions from running workers.' : 'Showing the most recent actions before workforce was stopped.'}
+        action={
+          <div className="flex items-center gap-2">
+            <StatusBadge tone={anyRunning ? 'success' : 'neutral'} pulse={anyRunning}>{anyRunning ? 'live' : 'paused'}</StatusBadge>
+            <button className="text-[11.5px] text-[#0F4C81] font-medium hover:underline">Open full log</button>
+          </div>
+        }
+        bodyClassName=""
+      >
+        <div className={`max-h-[420px] overflow-auto ${anyRunning ? '' : ''}`}>
+          <table className="w-full text-[12px]">
+            <thead className="sticky top-0 bg-white z-10">
+              <tr className="text-left text-[10.5px] font-semibold text-gray-500 uppercase tracking-wide border-b border-[#F0F1F3]">
+                <th className="px-5 py-2.5 w-[78px]">Time</th>
+                <th className="px-2 py-2.5 w-[180px]">Worker</th>
+                <th className="px-2 py-2.5 w-[96px]">Patient</th>
+                <th className="px-2 py-2.5">Action</th>
+                <th className="px-2 py-2.5 w-[92px]">Result</th>
+                <th className="px-5 py-2.5 w-[64px] text-right">ms</th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map((e) => (
+                <tr key={e._id} className="border-t border-[#F0F1F3] hover:bg-[#FAFAFA] fade-in-row">
+                  <td className="px-5 py-2.5 text-gray-500 font-mono text-[11.5px]">{e.ts}</td>
+                  <td className="px-2 py-2.5 text-gray-800">{e.worker}</td>
+                  <td className="px-2 py-2.5 font-mono text-[11.5px] text-[#0F4C81]">{e.patientId}</td>
+                  <td className="px-2 py-2.5 text-gray-700">{e.action}</td>
+                  <td className="px-2 py-2.5"><ResultPill result={e.result} /></td>
+                  <td className="px-5 py-2.5 text-right text-gray-500 font-mono text-[11.5px]">{e.durationMs}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    );
+
+    /* =====================================================
+     *  WORKFORCE PANEL
+     * ===================================================== */
+    const WorkerStatusCard = ({ worker, onToggle, onPause }) => {
+      const isRunning = worker.status === 'running';
+      const isPaused = worker.status === 'paused';
+      const tone = isRunning ? 'success' : isPaused ? 'warning' : 'neutral';
+      const label = isRunning ? 'Running' : isPaused ? 'Paused' : 'Idle';
+      return (
+        <div className={`relative border rounded-md p-3.5 bg-white hover:border-[#D1D5DB] transition-colors ${isRunning ? 'border-[#BBF7D0]' : 'border-[#EAEAEC]'}`}>
+          {isRunning && <span className="absolute top-3 left-0 w-[3px] h-6 rounded-r bg-[#16A34A]" />}
+          <div className="flex items-start justify-between mb-2">
+            <div className="min-w-0 pr-2">
+              <div className="text-[13px] font-semibold text-gray-900 truncate">{worker.name}</div>
+              <div className="text-[11px] text-gray-500 mt-0.5 line-clamp-2">{worker.role}</div>
+            </div>
+            <StatusBadge tone={tone} pulse={isRunning}>{label}</StatusBadge>
+          </div>
+          <div className="grid grid-cols-3 gap-2 mt-3">
+            <div className="bg-[#F9FAFB] rounded px-2 py-1.5">
+              <div className="text-[10px] text-gray-500 uppercase tracking-wide">Today</div>
+              <div className="text-[14px] font-semibold text-gray-900 leading-tight"><AnimatedNumber value={worker.tasksToday} /></div>
+            </div>
+            <div className="bg-[#F9FAFB] rounded px-2 py-1.5">
+              <div className="text-[10px] text-gray-500 uppercase tracking-wide">Avg time</div>
+              <div className="text-[14px] font-semibold text-gray-900 leading-tight">{worker.avgDurationSec}s</div>
+            </div>
+            <div className="bg-[#F9FAFB] rounded px-2 py-1.5">
+              <div className="text-[10px] text-gray-500 uppercase tracking-wide">Success</div>
+              <div className="text-[14px] font-semibold text-gray-900 leading-tight">{worker.successRate}%</div>
+            </div>
+          </div>
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <div className="text-[11px] text-gray-500 truncate flex-1">{worker.currentTask}</div>
+            <div className="flex items-center gap-1 shrink-0">
+              {(isRunning || isPaused) && (
+                <button
+                  onClick={() => onPause(worker.id)}
+                  className="h-7 w-7 rounded inline-flex items-center justify-center bg-[#FEF3C7] text-[#92400E] hover:bg-[#FDE68A]"
+                  title={isPaused ? 'Resume' : 'Pause'}
+                >
+                  <Icon name={isPaused ? 'play' : 'pause'} size={11} strokeWidth={2.25} />
+                </button>
+              )}
+              <button
+                onClick={() => onToggle(worker.id)}
+                className={`h-7 px-2.5 text-[11.5px] font-medium rounded inline-flex items-center gap-1 ${isRunning || isPaused ? 'bg-[#FEE2E2] text-[#991B1B] hover:bg-[#FECACA]' : 'bg-brand-navy text-white hover-brand-navy'}`}
+              >
+                <Icon name={isRunning || isPaused ? 'stop' : 'play'} size={11} strokeWidth={2.25} />
+                {isRunning || isPaused ? 'Stop' : 'Start'}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const WorkforcePanel = ({ workers, onToggleWorker, onPauseWorker }) => (
+      <Card
+        title="Workforce Status"
+        subtitle="Three autonomous workers deployed for Complete OK."
+        action={<button className="text-[11.5px] text-[#0F4C81] font-medium hover:underline">View all</button>}
+      >
+        <div className="space-y-2.5">
+          {workers.map(w => <WorkerStatusCard key={w.id} worker={w} onToggle={onToggleWorker} onPause={onPauseWorker} />)}
+        </div>
+      </Card>
+    );
+
+    /* =====================================================
+     *  EXCEPTIONS PANEL
+     * ===================================================== */
+    const ExceptionsPanel = ({ items }) => {
+      const top = items.slice(0, 5);
+      return (
+        <Card
+          title="Exceptions Pending Review"
+          subtitle={`${items.length} cases flagged for human review.`}
+          action={<button className="text-[11.5px] text-[#0F4C81] font-medium hover:underline">View all</button>}
+          bodyClassName="p-0"
+        >
+          {top.length === 0 ? (
+            <div className="px-5 py-10 text-center text-[12.5px] text-gray-500">All exceptions cleared. Excellent.</div>
+          ) : (
+            <ul className="divide-y divide-[#F0F1F3]">
+              {top.map(x => (
+                <li key={x.id} className="px-5 py-3 hover:bg-[#FAFAFA] cursor-pointer flex items-center justify-between fade-in-row">
+                  <div className="min-w-0 pr-3">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-[12px] text-[#0F4C81] font-medium">{x.patientId}</span>
+                      <UrgencyPill level={x.urgency} />
+                    </div>
+                    <div className="text-[12px] text-gray-700 mt-0.5 truncate">{x.reason}</div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[11px] text-gray-500 font-mono">{x.flaggedAt}</span>
+                    <Icon name="chevron-right" size={14} className="text-gray-400" />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      );
+    };
+
+    /* =====================================================
+     *  THROUGHPUT CHART (live)
+     * ===================================================== */
+    const ThroughputChart = ({ data, anyRunning }) => (
+      <Card
+        title="Workflow Throughput, Last 24 Hours"
+        subtitle="Patients processed per hour. Manual baseline shows the cadence of the prior process."
+        action={
+          <div className="flex items-center gap-3 text-[11px] text-gray-600">
+            <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#0F4C81]" /> Autonomous</span>
+            <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: '#D1D5DB' }} /> Manual baseline</span>
+            {anyRunning && <StatusBadge tone="success" pulse>live</StatusBadge>}
+          </div>
+        }
+      >
+        <div style={{ width: '100%', height: 260 }}>
+          <ResponsiveContainer>
+            <AreaChart data={data} margin={{ top: 6, right: 8, left: -16, bottom: 0 }}>
+              <defs>
+                <linearGradient id="autoFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#0F4C81" stopOpacity={0.18}/>
+                  <stop offset="100%" stopColor="#0F4C81" stopOpacity={0.02}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="0" vertical={false} />
+              <XAxis dataKey="hour" interval={2} tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={{ stroke: '#EAEAEC' }} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} />
+              <Tooltip
+                contentStyle={{ background: '#1F2937', border: 'none', borderRadius: 6, fontSize: 12, padding: '8px 10px' }}
+                labelStyle={{ color: '#9CA3AF', marginBottom: 4, fontSize: 11 }}
+                itemStyle={{ color: '#FFFFFF' }}
+                formatter={(v, n) => [`${v} patients/hr`, n === 'autonomous' ? 'Autonomous' : 'Manual baseline']}
+              />
+              <Area type="monotone" dataKey="manual" stroke="#9CA3AF" strokeWidth={1.5} fill="transparent" strokeDasharray="4 3" dot={false} isAnimationActive={false} />
+              <Area type="monotone" dataKey="autonomous" stroke="#0F4C81" strokeWidth={2} fill="url(#autoFill)" dot={false} activeDot={{ r: 4 }} isAnimationActive={false} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
+    );
+
+    /* =====================================================
+     *  INTEGRATION STATUS (live pings)
+     * ===================================================== */
+    const IntegrationStatusWidget = ({ integrations }) => (
+      <Card
+        title="Integration Status"
+        subtitle="Live connections to operational systems."
+        action={<button className="text-[11.5px] text-[#0F4C81] font-medium hover:underline">Diagnostics</button>}
+      >
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+          {integrations.map(int => (
+            <div key={int.name} className="border border-[#EAEAEC] rounded-md px-3 py-2.5 flex items-center gap-3">
+              <div className="w-8 h-8 rounded bg-[#F0F5FB] text-[#0F4C81] flex items-center justify-center">
+                <Icon name={int.name === 'EMR System' ? 'file-text' : int.name === 'CMS HETS' ? 'shield' : int.name === 'Clearinghouse' ? 'server' : 'database'} size={15} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A] pulse-dot" />
+                  <span className="text-[12.5px] font-medium text-gray-900 truncate">{int.name}</span>
+                </div>
+                <div className="text-[10.5px] text-gray-500 mt-0.5">Synced {int.lastSync}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    );
+
+    /* =====================================================
+     *  DASHBOARD PAGE
+     * ===================================================== */
+    const Dashboard = ({ sim }) => {
+      const runningCount = sim.workers.filter(w => w.status === 'running').length;
+      return (
+        <div className="px-6 py-5 space-y-5 max-w-[1600px] mx-auto">
+          <div className="flex items-end justify-between">
+            <div>
+              <div className="text-[11px] uppercase tracking-[0.12em] text-gray-500 font-medium">Executive Dashboard</div>
+              <h1 className="text-[22px] font-semibold text-gray-900 tracking-tight mt-1">Operations Overview</h1>
+              <p className="text-[12.5px] text-gray-500 mt-1">Live view of autonomous worker activity, exceptions, and operational impact.</p>
+            </div>
+            <div className="flex items-center gap-2 text-[11.5px] text-gray-500">
+              <Icon name="clock" size={13} />
+              <span>Tuesday, April 28, 2026 · {sim.stats.lastActivityHM} CDT</span>
+            </div>
+          </div>
+
+          <KPIStrip stats={sim.stats} workers={sim.workers} exceptions={sim.exceptions} anyRunning={sim.anyRunning} />
+
+          <MasterControlBar
+            anyRunning={sim.anyRunning}
+            onToggle={sim.toggleAll}
+            lastActivityHM={sim.stats.lastActivityHM}
+            runningCount={runningCount}
+            liveLastMinute={sim.stats.liveLastMinute}
+          />
+
+          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-5">
+            <div className="space-y-5 min-w-0">
+              <ActivityFeed entries={sim.feed} anyRunning={sim.anyRunning} />
+              <ThroughputChart data={sim.throughput} anyRunning={sim.anyRunning} />
+            </div>
+
+            <div className="space-y-5">
+              <WorkforcePanel workers={sim.workers} onToggleWorker={sim.toggleWorker} onPauseWorker={sim.pauseWorker} />
+              <ExceptionsPanel items={sim.exceptions} />
+            </div>
+          </div>
+
+          <IntegrationStatusWidget integrations={sim.integrations} />
+        </div>
+      );
+    };
+
+    /* =====================================================
+     *  PAGE SHELLS (filled in subsequent phases)
+     * ===================================================== */
+    const PageShell = ({ kicker, title, description, phase }) => (
+      <div className="px-6 py-5 max-w-[1600px] mx-auto">
+        <div className="flex items-end justify-between mb-5">
+          <div>
+            <div className="text-[11px] uppercase tracking-[0.12em] text-gray-500 font-medium">{kicker}</div>
+            <h1 className="text-[22px] font-semibold text-gray-900 tracking-tight mt-1">{title}</h1>
+            <p className="text-[12.5px] text-gray-500 mt-1">{description}</p>
+          </div>
+        </div>
+        <div className="card card-elev p-12 flex flex-col items-center justify-center text-center min-h-[360px]">
+          <div className="w-12 h-12 rounded-full bg-[#F0F5FB] text-[#0F4C81] flex items-center justify-center mb-4">
+            <Icon name="circle-dot" size={20} />
+          </div>
+          <div className="text-[15px] font-semibold text-gray-900 max-w-md">This view comes online in {phase}.</div>
+          <p className="text-[12.5px] text-gray-500 max-w-md mt-2">The Executive Dashboard is now fully live. Workforce drill-downs, the patient operations table, and the analytics page land in subsequent phases of this rapid prototype.</p>
+        </div>
+      </div>
+    );
+
+    const WorkforcePage = () => (<PageShell kicker="Workforce" title="Autonomous Workers" description="Manage the three deployed digital workers and review their performance." phase="Phase 3" />);
+    const PatientsPage = () => (<PageShell kicker="Patient Operations" title="Patient Verification Queue" description="Live table of patients flowing through the workforce, filterable by status and coverage." phase="Phase 4" />);
+    const AnalyticsPage = () => (<PageShell kicker="Analytics" title="Operational Impact" description="Hours saved, financial impact, quality, and manual versus autonomous comparison." phase="Phase 5" />);
+
+    /* =====================================================
+     *  ROOT APP
+     * ===================================================== */
+    const App = () => {
+      const [collapsed, setCollapsed] = useState(false);
+      const [page, setPage] = useState('dashboard');
+      const sim = useSimulation();
+
+      return (
+        <div className="h-full flex flex-col">
+          <Header onToggleSidebar={() => setCollapsed(c => !c)} anyRunning={sim.anyRunning} exceptionsCount={sim.exceptions.length} />
+          <div className="flex-1 flex min-h-0">
+            <Sidebar collapsed={collapsed} page={page} onNavigate={setPage} />
+            <main className="flex-1 overflow-auto bg-[#FAFAFA]">
+              {page === 'dashboard' && <Dashboard sim={sim} />}
+              {page === 'workforce' && <WorkforcePage />}
+              {page === 'patients' && <PatientsPage />}
+              {page === 'analytics' && <AnalyticsPage />}
+            </main>
+          </div>
+          <Footer />
+        </div>
+      );
+    };
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
