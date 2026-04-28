@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Complete OK Operations Intelligence Platform</title>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js" crossorigin></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/recharts@2.12.7/umd/Recharts.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after {
@@ -79,7 +79,26 @@
   </style>
 </head>
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <div id="boot-splash" style="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#FAFAFA;font-family:'Segoe UI','Inter',-apple-system,sans-serif;color:#1F2937;z-index:9999">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+        <div style="width:32px;height:32px;border-radius:6px;background:#0F4C81;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:13px;letter-spacing:-0.02em">CO</div>
+        <div style="display:flex;flex-direction:column;line-height:1">
+          <span style="font-size:14px;font-weight:600;letter-spacing:-0.01em">Complete OK</span>
+          <span style="font-size:9.5px;color:#6B7280;margin-top:3px;letter-spacing:0.12em;text-transform:uppercase">Home Health</span>
+        </div>
+      </div>
+      <div style="width:200px;height:3px;background:#EAEAEC;border-radius:3px;overflow:hidden;position:relative">
+        <div style="position:absolute;height:100%;width:40%;background:#0F4C81;border-radius:3px;animation:bootSlide 1.2s ease-in-out infinite"></div>
+      </div>
+      <div style="margin-top:16px;font-size:12px;color:#6B7280">Loading Operations Intelligence Platform...</div>
+      <div id="boot-warning" style="margin-top:24px;max-width:380px;text-align:center;font-size:11px;color:#9CA3AF;display:none">
+        Still loading. If this screen persists for more than 30 seconds, your network may be blocking <code style="background:#F3F4F6;padding:1px 4px;border-radius:3px;font-family:monospace;font-size:10.5px">cdn.jsdelivr.net</code> or <code style="background:#F3F4F6;padding:1px 4px;border-radius:3px;font-family:monospace;font-size:10.5px">cdn.tailwindcss.com</code>. Try opening the page off VPN, or contact your IT team.
+      </div>
+    </div>
+    <style>@keyframes bootSlide { 0%{left:-40%} 100%{left:100%} }</style>
+    <script>setTimeout(function(){var w=document.getElementById('boot-warning');if(w)w.style.display='block';},10000);</script>
+  </div>
   <script type="text/babel" data-presets="env,react">
     const { useState, useEffect, useRef, useMemo, useCallback } = React;
     const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area, BarChart, Bar } = Recharts;
