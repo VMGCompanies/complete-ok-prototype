@@ -444,28 +444,27 @@
         lastMinuteBucketRef.current = lastMinuteBucketRef.current.filter(t => now - t < 60000);
       }, []);
 
-      // Single-tick processor: process one patient through eligibility + change detection,
-      // plus possibly fire a triage routing.
+      // Single-tick processor: process one patient through eligibility (a multi-portal chain)
+      // followed by change detection, then optionally triage routing for flagged cases.
       const tickOnce = useCallback(() => {
         const fresh = workersRef.current;
         const eligOn = fresh.find(w => w.id === 'w-elig')?.status === 'running';
         const changeOn = fresh.find(w => w.id === 'w-change')?.status === 'running';
         const triageOn = fresh.find(w => w.id === 'w-triage')?.status === 'running';
 
+        const stillRunning = (id) => workersRef.current.find(x => x.id === id)?.status === 'running';
+
         const pidNum = nextPidRef.current;
         nextPidRef.current = pidNum + 1;
         const pid = `PT-${String(pidNum).padStart(6, '0')}`;
-        const ts = nowHMS();
+        const ts0 = nowHMS();
 
         let processedAny = false;
 
         if (eligOn) {
-          const dur = randInt(900, 1700);
-          const useQueryingLine = Math.random() < 0.45;
-          const action = useQueryingLine
-            ? 'Querying CMS HETS for Medicare Part A and Part B status.'
-            : 'Eligibility confirmed. Updated patient record.';
-          pushFeed({ ts, worker: 'Eligibility Verification', patientId: pid, action, result: 'verified', durationMs: dur });
+          // STEP 1, T+0: Query CMS HETS.
+          const dur1 = randInt(2200, 3400);
+          pushFeed({ ts: ts0, worker: 'Eligibility Verification', patientId: pid, action: 'Querying CMS HETS for Medicare Part A and Part B status.', result: 'verified', durationMs: dur1 });
 
           // Add a brand-new patient record at the top of the table.
           const r = Math.random();
@@ -485,35 +484,72 @@
             coverageHistory: [],
             notes: [],
             history: [
-              { id: histId(), ts, worker: 'Eligibility Verification', action, result: 'verified', durationMs: dur },
+              { id: histId(), ts: ts0, worker: 'Eligibility Verification', action: 'Querying CMS HETS for Medicare Part A and Part B status.', result: 'verified', durationMs: dur1 },
             ],
             newlyAdded: true,
           };
           setPatients(ps => [newPatient, ...ps]);
-          // Clear newlyAdded flag after the highlight animation completes.
           setTimeout(() => {
             setPatients(ps => ps.map(p => p.id === pid ? { ...p, newlyAdded: false } : p));
           }, 1500);
 
-          setWorkers(ws => ws.map(w => w.id === 'w-elig' ? { ...w, tasksToday: w.tasksToday + 1, tasksWeek: w.tasksWeek + 1, tasksMonth: w.tasksMonth + 1, currentTask: `Verifying ${pid}` } : w));
+          setWorkers(ws => ws.map(w => w.id === 'w-elig' ? { ...w, currentTask: `Querying CMS HETS for ${pid}` } : w));
+
+          // STEP 2, T+~3.5s: Pull beneficiary record from clearinghouse.
+          setTimeout(() => {
+            if (!stillRunning('w-elig')) return;
+            const dur2 = randInt(1800, 2800);
+            const ts1 = nowHMS();
+            pushFeed({ ts: ts1, worker: 'Eligibility Verification', patientId: pid, action: 'Pulling beneficiary record from clearinghouse.', result: 'verified', durationMs: dur2 });
+            setPatients(ps => ps.map(p => p.id === pid ? {
+              ...p,
+              history: [...p.history, { id: histId(), ts: ts1, worker: 'Eligibility Verification', action: 'Pulling beneficiary record from clearinghouse.', result: 'verified', durationMs: dur2 }],
+            } : p));
+            setWorkers(ws => ws.map(w => w.id === 'w-elig' ? { ...w, currentTask: `Pulling clearinghouse record for ${pid}` } : w));
+          }, randInt(3200, 4000));
+
+          // STEP 3, T+~6.5s: Cross-reference EMR record.
+          setTimeout(() => {
+            if (!stillRunning('w-elig')) return;
+            const dur3 = randInt(1400, 2200);
+            const ts2 = nowHMS();
+            pushFeed({ ts: ts2, worker: 'Eligibility Verification', patientId: pid, action: 'Cross-referencing payer details against EMR record.', result: 'verified', durationMs: dur3 });
+            setPatients(ps => ps.map(p => p.id === pid ? {
+              ...p,
+              history: [...p.history, { id: histId(), ts: ts2, worker: 'Eligibility Verification', action: 'Cross-referencing payer details against EMR record.', result: 'verified', durationMs: dur3 }],
+            } : p));
+            setWorkers(ws => ws.map(w => w.id === 'w-elig' ? { ...w, currentTask: `Cross-referencing EMR for ${pid}` } : w));
+          }, randInt(6000, 7000));
+
+          // STEP 4, T+~9s: Confirm and write back.
+          setTimeout(() => {
+            if (!stillRunning('w-elig')) return;
+            const dur4 = randInt(900, 1500);
+            const ts3 = nowHMS();
+            pushFeed({ ts: ts3, worker: 'Eligibility Verification', patientId: pid, action: 'Eligibility confirmed. Updated patient record.', result: 'verified', durationMs: dur4 });
+            setPatients(ps => ps.map(p => p.id === pid ? {
+              ...p,
+              history: [...p.history, { id: histId(), ts: ts3, worker: 'Eligibility Verification', action: 'Eligibility confirmed. Updated patient record.', result: 'verified', durationMs: dur4 }],
+            } : p));
+            setWorkers(ws => ws.map(w => w.id === 'w-elig' ? { ...w, tasksToday: w.tasksToday + 1, tasksWeek: w.tasksWeek + 1, tasksMonth: w.tasksMonth + 1, currentTask: `Verified ${pid}` } : w));
+          }, randInt(8500, 9500));
+
           processedAny = true;
         }
 
         if (changeOn) {
-          // Slight delay to simulate chained processing.
+          // Fires after the eligibility chain has visibly progressed (~10-12s in).
           setTimeout(() => {
-            // Drop the action if the worker has been stopped or paused since this tick fired.
-            const stillOn = workersRef.current.find(w => w.id === 'w-change')?.status === 'running';
-            if (!stillOn) return;
+            if (!stillRunning('w-change')) return;
             const flagged = Math.random() < 0.04;
             const ts2 = nowHMS();
             if (flagged) {
               const rsn = pickWeighted(EXCEPTION_REASONS);
-              pushFeed({ ts: ts2, worker: 'Insurance Change Detection', patientId: pid, action: `Detected ${rsn.shortAction}. Flagging for review.`, result: 'flagged', durationMs: randInt(800, 1200) });
+              const fdur = randInt(1500, 2300);
+              pushFeed({ ts: ts2, worker: 'Insurance Change Detection', patientId: pid, action: `Detected ${rsn.shortAction}. Flagging for review.`, result: 'flagged', durationMs: fdur });
               const exc = { id: `ex-${Date.now()}-${Math.random().toString(36).slice(2,6)}`, patientId: pid, reason: rsn.reason, urgency: rsn.urgency, flaggedAt: nowHM() };
               setExceptions(ex => [exc, ...ex].slice(0, 50));
               triageQueueRef.current.push(exc);
-              // Update the patient record's status to exception.
               setPatients(ps => ps.map(p => p.id === pid ? {
                 ...p,
                 status: 'exception',
@@ -521,28 +557,27 @@
                 urgency: rsn.urgency,
                 flaggedAt: nowHM(),
                 coverageHistory: [{ date: 'Today', label: rsn.reason, urgency: rsn.urgency, payer: p.plan ? p.plan.split(' ')[0] : 'Payer' }, ...p.coverageHistory],
-                history: [...p.history, { id: histId(), ts: ts2, worker: 'Insurance Change Detection', action: `Detected ${rsn.shortAction}. Flagging for review.`, result: 'flagged', durationMs: randInt(800, 1200) }],
+                history: [...p.history, { id: histId(), ts: ts2, worker: 'Insurance Change Detection', action: `Detected ${rsn.shortAction}. Flagging for review.`, result: 'flagged', durationMs: fdur }],
               } : p));
             } else {
-              const noChangeDur = randInt(550, 850);
+              const noChangeDur = randInt(1100, 1700);
               pushFeed({ ts: ts2, worker: 'Insurance Change Detection', patientId: pid, action: 'Cross-referenced payer information. No changes detected.', result: 'no change', durationMs: noChangeDur });
-              // Append "no change" to the patient's history.
               setPatients(ps => ps.map(p => p.id === pid ? {
                 ...p,
                 history: [...p.history, { id: histId(), ts: ts2, worker: 'Insurance Change Detection', action: 'Cross-referenced payer information. No changes detected.', result: 'no change', durationMs: noChangeDur }],
               } : p));
             }
             setWorkers(ws => ws.map(w => w.id === 'w-change' ? { ...w, tasksToday: w.tasksToday + 1, tasksWeek: w.tasksWeek + 1, tasksMonth: w.tasksMonth + 1, exceptionsFlagged: flagged ? w.exceptionsFlagged + 1 : w.exceptionsFlagged, currentTask: flagged ? `Flagged ${pid}` : `Checked ${pid}` } : w));
-          }, randInt(180, 360));
+          }, randInt(10500, 12000));
         }
 
         if (triageOn && triageQueueRef.current.length > 0 && Math.random() < 0.55) {
+          // Triage runs on its own slower cadence (~14-16s into the cycle).
           setTimeout(() => {
-            const stillOn = workersRef.current.find(w => w.id === 'w-triage')?.status === 'running';
-            if (!stillOn) return;
+            if (!stillRunning('w-triage')) return;
             const exc = triageQueueRef.current.shift();
             if (!exc) return;
-            const dur = randInt(1500, 2200);
+            const dur = randInt(2400, 3600);
             const ts3 = nowHMS();
             pushFeed({ ts: ts3, worker: 'Exception Triage', patientId: exc.patientId, action: 'Routed to billing team. Recommended action attached.', result: 'routed', durationMs: dur });
             setExceptions(ex => ex.filter(e => e.id !== exc.id));
@@ -551,7 +586,7 @@
               history: [...p.history, { id: histId(), ts: ts3, worker: 'Exception Triage', action: 'Routed to billing team. Recommended action attached.', result: 'routed', durationMs: dur }],
             } : p));
             setWorkers(ws => ws.map(w => w.id === 'w-triage' ? { ...w, tasksToday: w.tasksToday + 1, tasksWeek: w.tasksWeek + 1, tasksMonth: w.tasksMonth + 1, currentTask: `Routed ${exc.patientId}` } : w));
-          }, randInt(400, 700));
+          }, randInt(13500, 15500));
         }
 
         if (processedAny) {
@@ -582,7 +617,7 @@
 
         // Try to use a dedicated Web Worker for timer pacing (immune to background-tab throttling).
         try {
-          const workerSrc = `let id=null;onmessage=function(e){if(e.data&&e.data.type==='start'){const tick=()=>{postMessage('tick');id=setTimeout(tick,300+Math.random()*600)};id=setTimeout(tick,250)}else if(e.data&&e.data.type==='stop'){if(id)clearTimeout(id);id=null}};`;
+          const workerSrc = `let id=null;onmessage=function(e){if(e.data&&e.data.type==='start'){const tick=()=>{postMessage('tick');id=setTimeout(tick,4500+Math.random()*2000)};id=setTimeout(tick,400)}else if(e.data&&e.data.type==='stop'){if(id)clearTimeout(id);id=null}};`;
           const blob = new Blob([workerSrc], { type: 'application/javascript' });
           const url = URL.createObjectURL(blob);
           worker = new Worker(url);
@@ -597,9 +632,9 @@
           const loop = () => {
             if (cancelled) return;
             tickOnce();
-            mainThreadTimer = setTimeout(loop, randInt(300, 900));
+            mainThreadTimer = setTimeout(loop, randInt(4500, 6500));
           };
-          mainThreadTimer = setTimeout(loop, 250);
+          mainThreadTimer = setTimeout(loop, 400);
         }
 
         return () => {
